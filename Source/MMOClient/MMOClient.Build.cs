@@ -14,7 +14,14 @@ public class MMOClient : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "UMG", "Sockets", "Networking", "Libprotobuf", "Json", "JsonUtilities", "AIModule" });
+        CppStandard = CppStandardVersion.Cpp17;
+
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "UMG", "SlateCore", 
+            "Sockets", "Networking", "Libprotobuf",
+            "AIModule",
+            "Json", "JsonUtilities", "HTTP", 
+            "MyFirebasePlug", 
+            /*"OnlineSubsystem", "OnlineSubsystemEOS"*/ });
 
 
         PublicIncludePaths.AddRange(new string[] {
@@ -24,5 +31,7 @@ public class MMOClient : ModuleRules
         });
 
         System.Console.WriteLine("-------------" + ModuleDirectory);
+        bEnableUndefinedIdentifierWarnings = false;
     }
+
 }

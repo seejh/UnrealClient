@@ -8,7 +8,7 @@
 #include"../MyPlayerController.h"
 
 template<typename T>
-class MMOCLIENT_API FActorPool // 오브젝트 풀 아님 액터풀임 
+class MMOCLIENT_API FActorPool
 {
 public:
 	//

@@ -12,6 +12,8 @@
 #include"MyPlayerController.h"
 #include"Buffer.h"
 #include"ServerPacketHandler.h"
+#include<common/TcpSocketBuilder.h>
+
 
 /*--------------------------------------
     NetSession
@@ -56,21 +58,28 @@ void FNetSession::Exit()
     _thread = nullptr;
 }
 
-bool FNetSession::Connect()
+bool FNetSession::Connect(FString ip, int32 port)
 {
     _socket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT(""), false);
-
+    
+    ip = "127.0.0.1";
+    port = 7777;
+    
     FIPv4Address ipAddr;
-    FIPv4Address::Parse(TEXT("127.0.0.1"), ipAddr);
-    FIPv4Endpoint endPoint = FIPv4Endpoint(ipAddr, 7777);
+    FIPv4Address::Parse(ip, ipAddr);
+    FIPv4Endpoint endPoint = FIPv4Endpoint(ipAddr, port);
+    /*FIPv4Address::Parse(TEXT("127.0.0.1"), ipAddr);
+    FIPv4Endpoint endPoint = FIPv4Endpoint(ipAddr, 7777);*/
 
     //_socket->SetNoDelay(true);
-    _socket->SetNonBlocking(true);
+    _socket->SetNonBlocking(true);   
     _socket->Connect(*endPoint.ToInternetAddr());
-
     ESocketConnectionState state = _socket->GetConnectionState();
     if (state != ESocketConnectionState::SCS_Connected) {
-        UE_LOG(LogTemp, Error, TEXT("Socket Connect Error"));
+        ESocketErrors reason = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLastErrorCode();
+        
+        UE_LOG(LogTemp, Error, TEXT("Socket Connect Error : %d"), reason);
+
         return false;
     }
 

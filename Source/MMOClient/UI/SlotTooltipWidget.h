@@ -7,20 +7,19 @@
 #include "SlotTooltipWidget.generated.h"
 
 class UTextBlock;
-class UItem;
 UCLASS()
 class MMOCLIENT_API USlotTooltipWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	void UpdateToolTip(UItem* item);
+	void UpdateToolTip(class UItem* item);
 public:
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(meta = (BindWidget))
 		UTextBlock* name;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(meta = (BindWidget))
 		UTextBlock* description;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	UPROPERTY(meta = (BindWidget))
 		UTextBlock* details;
 };

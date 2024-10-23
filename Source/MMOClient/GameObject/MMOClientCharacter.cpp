@@ -15,6 +15,7 @@
 #include"../MyGameInstance.h"
 #include"../MyPlayerController.h"
 #include"MyMonster.h"
+#include"../ObjectsManager.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AMMOClientCharacter
@@ -173,17 +174,17 @@ void AMMOClientCharacter::Attack()
 			// 
 			AMyCharacterBase* victimActor = Cast<AMyCharacterBase>(victim);
 			if (IsValid(victimActor)) {
-				
-				// 추출된 액터가 본인
-				if (victimActor->info->objectid() == instance->_myCharacterInfo->objectid())
+
+				// 몬스터가 아니면 패스
+				if (instance->_objectsManager->GetObjectInfoById(victimActor->_objectId)->objecttype() != PROTOCOL::GameObjectType::MONSTER)
 					continue;
 
-				victims.Add(victimActor->info->objectid());
+				victims.Add(victimActor->_objectId);
 			}
 		}
 	}
 
-	instance->_gameController->MyPlayerAttack(victims);
+	instance->_playerController->MyPlayerAttack(victims);
 }
 
 void AMMOClientCharacter::MoveForwardAndRight(float Value, bool isForward)

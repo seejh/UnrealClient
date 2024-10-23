@@ -11,9 +11,12 @@
 
 #include"../MyGameInstance.h"
 #include"../MyPlayerController.h"
-#include"../Data/DataManager.h"
+#include"../DataManager.h"
 #include"InventoryWidget.h"
 #include"RespawnWidget.h"
+#include"InteractWidget.h"
+#include"DialogueWidget.h"
+#include"QuestLogWidget.h"
 
 void UMyHUDWidget::NativeConstruct()
 {
@@ -22,79 +25,106 @@ void UMyHUDWidget::NativeConstruct()
 	ChatBtn->OnReleased.AddDynamic(this, &UMyHUDWidget::OnClickedChatBtn);
 }
 
-void UMyHUDWidget::Init()
+void UMyHUDWidget::Init(bool isFirst)
 {
-	// 인벤토리
-	InventoryUI->SetVisibility(ESlateVisibility::Hidden);
-	InventoryUI->Init();
+	_ownerInstance = Cast<UMyGameInstance>(GetGameInstance());
 
-	// 리스폰
-	RespawnUI->SetVisibility(ESlateVisibility::Hidden);
+	// 인벤토리UI
+	InventoryUI->Init(isFirst);
 
-	// Level
+	// 상호 작용UI
+	InteractUI->SetVisibility(ESlateVisibility::Hidden);
+
+	// 리스폰UI
+	RespawnUI->Init();
+
+	// 대화창UI
+	DialogueUI->SetVisibility(ESlateVisibility::Hidden);
+
+	// 퀘스트UI
+	QuestUI->Init();
+
+	// 레벨
 	UpdateLevel();
 
-	// HP
+	// 체력바
 	UpdateHp();
 
-	// Exp
+	// 경험치바
 	UpdateExp();
+}
+
+void UMyHUDWidget::Clear()
+{
+	// 퀘스트 UI, 인벤토리 UI 정리
+
+	// 퀘스트UI 정리
+	QuestUI->Clear();
+
+	// 인벤토리UI 정리
+	InventoryUI->Clear();
+
+	// 채팅창 정리
+	ChatScrollBox->ClearChildren();
+}
+
+void UMyHUDWidget::Reset()
+{
+	// 리스폰 위젯
+	RespawnUI->Init();
+
+	// hp 업데이트
+	UpdateHp();
 }
 
 void UMyHUDWidget::UpdateHp()
 {
-	//
-	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
+	// 체력 상태
+	const int32 hp = _ownerInstance->_myCharacterInfo->stat().hp();
+	const int32 maxHp = _ownerInstance->_myCharacterInfo->stat().maxhp();
 
-	//
-	const int32 hp = instance->_myCharacterInfo->stat().hp();
-	const int32 maxHp = instance->_myCharacterInfo->stat().maxhp();
+	// UI텍스트
+	FString hpStr("HP : ");
+	hpStr.Append(FString::FromInt(hp)).
+		Append(" / ")
+		.Append(FString::FromInt(maxHp));
 
-	// UI-텍스트 적용
-	FString str("HP : ");
-	str.Append(FString::FromInt(hp));
-	str.Append(" / ");
-	str.Append(FString::FromInt(maxHp));
+	HpText->SetText(FText::FromString(hpStr));
 
-	HpText->SetText(FText::FromString(str));
-
-	// UI-그래프 적용
+	// UIBar
 	HPBar->SetPercent((float)hp / (float)maxHp);
 }
 
 void UMyHUDWidget::UpdateExp()
 {
-	//
-	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
+	// 경험치 상태
+	const int32 exp = _ownerInstance->_myCharacterInfo->stat().exp();
+	const int32 totalExp = _ownerInstance->_myCharacterInfo->stat().totalexp();
+
+	// UI텍스트
+	FString expStr("EXP : ");
+	expStr.Append(FString::FromInt(exp))
+		.Append(" / ")
+		.Append(FString::FromInt(totalExp));
+
+	ExpText->SetText(FText::FromString(expStr));
+
+	// UIBar
+	// 현 경험치 - 이전레벨 맥스경험치 / 현레벨 맥스경험치 - 이전레벨 맥스경험치
 	
-	//
-	const int32 exp = instance->_myCharacterInfo->stat().exp();
-	const int32 totalExp = instance->_myCharacterInfo->stat().totalexp();
-
-	// UI-텍스트 적용
-	FString str("EXP : ");
-	str.Append(FString::FromInt(exp));
-	str.Append(" / ");
-	str.Append(FString::FromInt(totalExp));
-
-	ExpText->SetText(FText::FromString(str));
-
-	// UI-그래프 적용 - 현 경험치 - 전 레벨 맥스 경험치 / 현 레벨 맥스 경험치 - 전 레벨 맥스 경험치
 	// 전 레벨 맥스 경험치
-	int32 prevMax = instance->_dataManager->_statTable[instance->_myCharacterInfo->stat().level() - 1].totalExp;
+	int32 prevMax = _ownerInstance->_dataManager->_statTable[_ownerInstance->_myCharacterInfo->stat().level() - 1].totalExp;
+	
 	ExpBar->SetPercent((float)(exp - prevMax) / (float)(totalExp - prevMax));
 }
 
 void UMyHUDWidget::UpdateLevel()
 {
-	//
-	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
+	// UI텍스트
+	FString levelStr("LV.");
+	levelStr.Append(FString::FromInt(_ownerInstance->_myCharacterInfo->stat().level()));
 
-	// UI-텍스트 적용
-	FString str("LV.");
-	str.Append(FString::FromInt(instance->_myCharacterInfo->stat().level()));
-
-	LevelText->SetText(FText::FromString(str));
+	LevelText->SetText(FText::FromString(levelStr));
 }
 
 void UMyHUDWidget::AddChatMessage(FString& message)
@@ -110,16 +140,15 @@ void UMyHUDWidget::AddChatMessage(FString& message)
 
 void UMyHUDWidget::OnClickedChatBtn()
 {
-	// 입력란 텍스트 가져옴
+	// 입력칸에서 작성된 텍스트 가져온다.
 	FString chatMessage(ChatEditableTextBox->GetText().ToString());
 	if (chatMessage.IsEmpty())
 		return;
 
-	// 패킷 송신
-	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	instance->_gameController->MyPlayerChat(chatMessage);
+	// 패킷
+	_ownerInstance->_playerController->MyPlayerChat(chatMessage);
 	
-	// 입력란 초기화
+	// 입력칸 초기화
 	ChatEditableTextBox->SetText(FText::GetEmpty());
 }
 

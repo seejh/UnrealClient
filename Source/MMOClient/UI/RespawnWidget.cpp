@@ -14,6 +14,13 @@ void URespawnWidget::NativeConstruct()
 	RespawnBtn->OnReleased.AddDynamic(this, &URespawnWidget::OnRespawnBtnClicked);
 }
 
+void URespawnWidget::Init()
+{
+	SetVisibility(ESlateVisibility::Hidden);
+
+	RespawnBtn->SetIsEnabled(true);
+}
+
 void URespawnWidget::OnRespawnBtnClicked()
 {
 	// 중복 요청 방지 - 비활성화
@@ -21,5 +28,26 @@ void URespawnWidget::OnRespawnBtnClicked()
 
 	// 요청
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	instance->TryEnterRoom();
+	
+	// 패킷 - 걍 일단 여기서 처리
+	PROTOCOL::C_Enter_Room toPkt;
+	toPkt.set_roomnum(1);
+	toPkt.mutable_object()->set_name(name);
+
+	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
+	instance->_netSession->Send(sendBuffer);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

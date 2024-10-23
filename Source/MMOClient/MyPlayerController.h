@@ -36,23 +36,27 @@ class MMOCLIENT_API AMyPlayerController : public APlayerController
 public:
 	AMyPlayerController();
 
+	void Init(bool isFirst);
+
 	/*---------------------------------------------------------------------------
-		override
+		기타
 	---------------------------------------------------------------------------*/
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	void ShowMouseCursor(bool isShow);
 
 	/*---------------------------------------------------------------------------
 		외부 입력
 	--------------------------------------------------------------------------*/
-	void HandleSpawn(PROTOCOL::S_Spawn& spawnPkt);
-	void HandleDespawn(PROTOCOL::S_DeSpawn& despawnPkt);
+	void SpawnObject(PROTOCOL::S_Spawn& spawnPkt);
+	void DeSpawnObject(PROTOCOL::S_DeSpawn& despawnPkt);
 	void MoveUpdate(PROTOCOL::ObjectInfo info);
-	void HandleChangeHp(PROTOCOL::S_ChangeHp fromPkt);
-	void HandleSkill(PROTOCOL::S_Skill& skillPkt);
-	void HandleDie(PROTOCOL::S_Die fromPkt);
-	void HandleChat(PROTOCOL::S_Chat fromPkt);
+	void ChangeHP(PROTOCOL::S_ChangeHp fromPkt);
+	void Skill(PROTOCOL::S_Skill& skillPkt);
+	void Die(PROTOCOL::S_Die fromPkt);
+	void PlayerChat(PROTOCOL::S_Chat fromPkt);
+	void SystemChat(FString chatMessage);
 
 	/*---------------------------------------------------------------------------
 		개인 플레이어 입력
@@ -60,22 +64,18 @@ public:
 	void SendMyPos();
 	void MyPlayerAttack(TArray<int32>& playerArray);
 	void MyPlayerChat(FString& chatMessage);
-	
+
 protected:
-	void OpenInventory();
-	void MouseCursorOnOff();
 	virtual void SetupInputComponent() override;
-
 public:
-	TSubclassOf<UObject> _bpPlayer;
-	TSubclassOf<UObject> _bpMonster;
-	USkeletalMesh* _crunchMesh;
-	USkeletalMesh* _blackCrunchMesh;
+	void Interact();
+	void MouseCursorOnOff();
+	void OpenInventory();
+	void OpenQuest();
 
-	FObjectManager* _objectManager;
 public:
 	
-	FTimerHandle _timerHandle;
+	FTimerHandle _timerHandle_myPosSend;
 	UMyGameInstance* _ownerInstance;
 	
 	int64 _lastSendTime = 0;

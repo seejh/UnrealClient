@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include<iostream>
+
 #include "Blueprint/UserWidget.h"
 #include "RespawnWidget.generated.h"
 
@@ -16,9 +18,13 @@ class MMOCLIENT_API URespawnWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
+	void Init();
+
 	UFUNCTION(BlueprintCallable)
 		void OnRespawnBtnClicked();
-
+public:
 	UPROPERTY(meta = (BindWidget))
 		class UButton* RespawnBtn;
+
+	std::string name;
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MyGameInstance.h"
@@ -12,87 +12,78 @@
 #include"UI/CharacterSlotWidget.h"
 #include"UI/CreateCharacterWidget.h"
 #include"UI/RespawnWidget.h"
+#include"UI/ServerListWidget.h"
+#include"UI/ServerListSlotWidget.h"
 
 #include"MyPlayerController.h"
 #include"LoginController.h"
 #include"NetSession.h"
 #include"ServerPacketHandler.h"
-#include"Data/DataManager.h"
+#include"DataManager.h"
 #include"Data/GameStruct.h"
-#include"GameObject/ObjectManager.h"
+#include"ObjectManager.h"
+#include"WebManager.h"
+#include"UIManager.h"
+#include"ObjectsManager.h"
+#include"QuestManager.h"
 
 #include<TimerManager.h>
 #include "Blueprint/WidgetLayoutLibrary.h"
 
+//#include<MyFirebasePlug.h>
+#include"FirebaseManager.h"
+
 
 UMyGameInstance::UMyGameInstance()
 {
-    // ·Îºñ
-    static ConstructorHelpers::FClassFinder<ULobbyWidget> LobbyWidgetAsset(TEXT("/Game/UI/WB_LobbyWidget"));
-    if (LobbyWidgetAsset.Succeeded())
-        LobbyWidgetClass = LobbyWidgetAsset.Class;
-
-    // ·Îºñ Ä³¸¯ ½½·Ô
-    static ConstructorHelpers::FClassFinder<UCharacterSlotWidget> CharacterSlotWidgetAsset(TEXT("/Game/UI/WBP_CharacterSlot"));
-    if (CharacterSlotWidgetAsset.Succeeded())
-        CharacterSlotWidgetClass = CharacterSlotWidgetAsset.Class;
-
-    // ·Îºñ Ä³¸¯ »ı¼º
-    static ConstructorHelpers::FClassFinder<UCreateCharacterWidget> CreateCharacterWidgetAsset(TEXT("/Game/UI/WBP_CreateCharacter"));
-    if (CreateCharacterWidgetAsset.Succeeded())
-        CreateCharacterWidgetClass = CreateCharacterWidgetAsset.Class;
-
-    // ÀÎº¥Åä¸®
-    static ConstructorHelpers::FClassFinder<UInventoryWidget> InventoryWidgetAsset(TEXT("/Game/UI/WBP_Inventory"));
-    if (InventoryWidgetAsset.Succeeded())
-        InventoryWidgetClass = InventoryWidgetAsset.Class;
-
-    // ÀÎº¥ ½½·Ô
-    static ConstructorHelpers::FClassFinder<UInvenSlotWidget> InvenSlotWidgetAsset(TEXT("/Game/UI/WBP_InvenSlot"));
-    if (InvenSlotWidgetAsset.Succeeded())
-        InvenSlotWidgetClass = InvenSlotWidgetAsset.Class;
-
-    // ÀÎº¥ ½½·Ô ÅøÆÁ
-    static ConstructorHelpers::FClassFinder<USlotTooltipWidget> SlotTooltipWidgetAsset(TEXT("/Game/UI/WBP_SlotToolTip"));
-    if (SlotTooltipWidgetAsset.Succeeded())
-        SlotTooltipWidgetClass = SlotTooltipWidgetAsset.Class;
-
-    // ¸®½ºÆù
-    static ConstructorHelpers::FClassFinder<URespawnWidget> RespawnWidgetAsset(TEXT("/Game/UI/WBP_ReSpawn"));
-    if (RespawnWidgetAsset.Succeeded())
-        RespawnWidgetClass = RespawnWidgetAsset.Class;
-
-    // HUD
-    static ConstructorHelpers::FClassFinder<UMyHUDWidget> HudWidgetAsset(TEXT("/Game/UI/WB_MyHUDWidget"));
-    if (HudWidgetAsset.Succeeded()) 
-        MyHUDWidgetClass = HudWidgetAsset.Class;
 }
 
 void UMyGameInstance::Init()
 {
     Super::Init();
 
-    // µ¥ÀÌÅÍ¸Å´ÏÀú »ı¼º
+    // UI ë§¤ë‹ˆì €
+    _uiManager = NewObject<UUIManager>();
+    if (IsValid(_uiManager) == false) {
+        UE_LOG(LogTemp, Error, TEXT("GameInstance::Init - Invalid UIManager"));
+        return;
+    }
+    _uiManager->_ownerInstance = this;
+
+    // ë°ì´í„°ë§¤ë‹ˆì € ìƒì„±
     _dataManager = NewObject<UDataManager>();
-    if (IsValid(_dataManager) == false) {
+    if (IsValid(_dataManager) == false || _dataManager->Init() == false) {
         UE_LOG(LogTemp, Error, TEXT("GameInstance::Init - Invalid DataManager"));
         return;
     }
-    // µ¥ÀÌÅÍ¸Å´ÏÀú Init(¾ÆÀÌÅÛ µ¥ÀÌÅÍ ·Îµå)
-    if (_dataManager->Init() == false) {
+
+    // ì˜¤ë¸Œì íŠ¸ ë§¤ë‹ˆì €
+    _objectsManager = NewObject<UObjectsManager>();
+    if (IsValid(_objectsManager) == false) {
+        UE_LOG(LogTemp, Error, TEXT("GameInstance::Init - Invalid ObjectsManager"));
         return;
     }
+    _objectsManager->_ownerInstance = this;
 
-    //³×Æ®¿öÅ©¼¼¼Ç, ÆĞÅ¶ÇÚµé·¯
-    _netSession = MakeShareable(new FNetSession(this));
+    // íŒ¨í‚· í•¸ë“¤ëŸ¬
     _packetHandler = MakeShareable(new FServerPacketHandler());
     _packetHandler->Init();
 
-    //// ¼­¹ö¿Í ¿¬°á
-    if (!_netSession->Connect()) 
-        return;
-    
-    _playerState = PROTOCOL::PlayerServerState::SERVER_STATE_CONNECTED;
+    // í€˜ìŠ¤íŠ¸ ë§¤ë‹ˆì €
+    _questManager = NewObject<UQuestManager>();
+    _questManager->_ownerInstance = this;
+
+    // ì›¹ë§¤ë‹ˆì €
+    _webManager = new FWebManager();
+    _webManager->Init(this, FString("https://localhost:7187"));
+
+    // ë„¤íŠ¸ì›Œí¬ ì„¸ì…˜
+    _netSession = MakeShareable(new FNetSession(this));
+
+    // íŒŒì´ì–´ë² ì´ìŠ¤
+    /*_firebaseManager = NewObject<UFirebaseManager>();
+    if (_firebaseManager->Init(this) == false)
+        return;*/
 }
 
 void UMyGameInstance::BeginDestroy()
@@ -105,282 +96,425 @@ void UMyGameInstance::BeginDestroy()
         _netSession->Stop();
 }
 
-void UMyGameInstance::EnterLobby()
+void UMyGameInstance::AddItem(PROTOCOL::ItemInfo itemInfo)
 {
-    // Çö »óÅÂ
-    _playerState = PROTOCOL::PlayerServerState::SERVER_STATE_LOGIN;
+    // ì¼ë‹¨ ì†Œë¹„ ì•„ì´í…œì„ íšë“í•  ë•Œ ê¸°ì¡´ ì†Œë¹„ ì•„ì´í…œì´ ìˆì–´ì„œ ìƒˆë¡œ ìƒì„±ì´ ì•„ë‹ˆë¼ 
+    // ì—…ë°ì´íŠ¸ë§Œ í•˜ëŠ” ê²½ìš°ì—ë„ S_AddItem íŒ¨í‚·ìœ¼ë¡œ ë°›ëŠ”ë‹¤.(Addë¡œ ì²˜ë¦¬í•œë‹¤ëŠ” ì†Œë¦¬)
+    // í´ë¼ì¸¡ ì¸ë²¤ì—ì„œ ì¡°íšŒí•´ì„œ í•´ë‹¹ ì•„ì´í…œì´ ì—†ìœ¼ë©´ ìƒì„±, í•´ë‹¹ ì•„ì´í…œì´ ìˆìœ¼ë©´ ì—…ë°ì´íŠ¸ë¼ëŠ” ì‹ìœ¼ë¡œ êµ¬ë¶„
 
-    // ·Î±×ÀÎ -> ·Îºñ
-    // ·Î±×ÀÎ À§Á¬ ÇØÁ¦
-    _nowWidget->RemoveFromParent();
-    _nowWidget = nullptr;
-
-    // ·Îºñ À§Á¬ »ı¼º
-    _nowWidget = CreateWidget(GetWorld(), LobbyWidgetClass);
-    Cast<ULobbyWidget>(_nowWidget)->Init();
-    _nowWidget->AddToViewport();
-}
-
-void UMyGameInstance::TryEnterRoom()
-{
-    // ÆĞÅ¶ »ı¼º
-    PROTOCOL::C_Enter_Room toPkt;
-    toPkt.set_roomnum(1);
-    toPkt.mutable_object()->set_name(_myCharacterInfo->name());
-
-    // ÆĞÅ¶ Àü¼Û
-    auto sendBuffer = _packetHandler->MakeSendBuffer(toPkt);
-    _netSession->Send(sendBuffer);
-}
-
-void UMyGameInstance::HandleLogin(PROTOCOL::S_Login fromPkt)
-{
-    if (fromPkt.success() == false) {
-        UE_LOG(LogTemp, Error, TEXT("Failed Login to Server"));
+    // ì•„ì´í…œ ë°ì´í„° ì¡°íšŒ
+    auto itemDataPtr = _dataManager->_itemTable.Find(itemInfo.templateid());
+    if (itemDataPtr == nullptr) {
+        UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::AddItem() Error - Can't Find ItemData"));
         return;
     }
 
-    UE_LOG(LogTemp, Error, TEXT("Login to Server OK"));
+    //
+    UItem* item;
+    int32 differ;
 
-    // ³» Ä³¸¯¸®½ºÆ®
+    // ì¶”ê°€í•  ì•„ì´í…œì´ ì†Œëª¨í’ˆ
+    if ((*itemDataPtr)->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
+        // ì¸ë²¤í† ë¦¬ì— í•´ë‹¹ ì†Œëª¨í’ˆì´ ì´ë¯¸ ìˆëŠ”ê°€
+        auto itemPtr = inventory.Find(itemInfo.slot());
+        if (itemPtr == nullptr) {
+
+            // ì—†ë‹¤ => ìƒì„±, ì¸ë²¤ ì ì¬
+            differ = itemInfo.count();
+            item = NewObject<UConsumable>();
+            item->Init(this, itemInfo.templateid());
+            item->SetItemDB(itemInfo);
+            inventory.Add(item->itemDB.slot, item);
+        }
+        else {
+
+            // ìˆë‹¤ => ì—…ë°ì´íŠ¸
+            item = (*itemPtr);
+            differ = itemInfo.count() - item->itemDB.count;
+            item->SetItemDB(itemInfo);
+        }
+    }
+
+    // ì¶”ê°€í•  ì•„ì´í…œì´ ì¥ë¹„(ë¬´ê¸°)
+    else if ((*itemDataPtr)->itemType == EItemType::ITEM_TYPE_WEAPON) {
+        // ìƒì„±, ì¸ë²¤ ì ì¬
+        item = NewObject<UWeapon>();
+        item->Init(this, itemInfo.templateid());
+        item->SetItemDB(itemInfo);
+        inventory.Add(item->itemDB.slot, item);
+    }
+
+    // ì¶”ê°€í•  ì•„ì´í…œì´ ì¥ë¹„(ë°©ì–´êµ¬)
+    else if ((*itemDataPtr)->itemType == EItemType::ITEM_TYPE_ARMOR) {
+        // ìƒì„±, ì¸ë²¤ ì ì¬
+        item = NewObject<UArmor>();
+        item->Init(this, itemInfo.templateid());
+        item->SetItemDB(itemInfo);
+        inventory.Add(item->itemDB.slot, item);
+    }
+    else
+        return;
+
+    // UI ì—…ë°ì´íŠ¸
+    // ì²˜ìŒ ì ‘ì†í•  ë•Œ UIê°€ ì˜¬ë¼ì˜¤ê¸° ì „ì— ì•„ì´í…œë¦¬ìŠ¤íŠ¸ë¥¼ ë°›ëŠ”ë‹¤. ê·¸ ë•Œë¥¼ ìœ„í•œ êµ¬ë¶„ì´ë©°, ê·¸ ë•Œì—ëŠ” UIì²˜ë¦¬ í•˜ì§€ì•ŠìŒ
+    if (_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME) {
+        // 
+        UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+        if (IsValid(hudUI))
+            hudUI->InventoryUI->SetSlot(item->itemDB.slot);
+
+        // íšë“ ë¡œê·¸
+        FString str;
+        str.Append(FString::Printf(TEXT("ì•„ì´í…œ ")))
+            .Append(item->itemData->name)
+            .Append(FString::Printf(TEXT(" íšë“")));
+
+        if ((*itemDataPtr)->itemType == EItemType::ITEM_TYPE_CONSUMABLE)
+            str.Append(FString::Printf(TEXT("(%d)"), differ));
+
+        _playerController->SystemChat(str);
+    }
+}
+
+void UMyGameInstance::UpdateItem(PROTOCOL::ItemInfo itemInfo)
+{
+    // í´ë¼ì—ì„œ ë¡œê·¸ë¥¼ ì°ê¸°ê°€ ì• ë§¤í•¨
+    // ìƒˆë¡œìš´ ì†Œë¹„ ì•„ì´í…œì„ ì–»ì–´ì„œ ì—…ë°ì´íŠ¸ íŒ¨í‚·ì„ ë³´ë‚´ì¤¬ëŠ”ë° ë°›ëŠ”ì…ì¥(í´ë¼)ì—ì„œëŠ” ê·¸ê²ƒì´ ì•„ì´í…œ íšë“ì¸ì§€ ëª¨ë¦„
+    // ê°œìˆ˜ ë¹„êµë¡œ ì•Œ ìˆ˜ëŠ” ìˆìœ¼ë‚˜, ì• ì´ˆì— ì¸ê²Œì„ ë¡œê·¸ë¥¼ ì´ë”°êµ¬ë¡œ ì°ìœ¼ë©´ ì•ˆë ë“¯
+
+    // C++ ì¸ë²¤ì—ì„œ í•´ë‹¹ ì•„ì´í…œ ì°¾ìŒ
+    auto itemPtr = inventory.Find(itemInfo.slot());
+    if (itemPtr == nullptr)
+        return;
+
+    // ì•„ì´í…œ ë°ì´í„° ì—…ë°ì´íŠ¸
+    (*itemPtr)->SetItemDB(itemInfo);
+
+    // UI ì—…ë°ì´íŠ¸
+    UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+    if (IsValid(hudUI)) {
+
+        hudUI->InventoryUI->UpdateSlot(itemInfo.slot());
+
+    }
+}
+
+void UMyGameInstance::Handle_Login(PROTOCOL::S_Login fromPkt) {
     for (int i = 0; i < fromPkt.objectinfos_size(); i++) 
         _myCharacterList.Add(fromPkt.objectinfos(i));
 
-    EnterLobby();
+    _uiManager->CreateMainUI(_uiManager->LobbyClass)->AddToViewport();
 }
 
-void UMyGameInstance::HandleEnterRoom(PROTOCOL::ObjectInfo info)
+void UMyGameInstance::Handle_CreateAccount(FCreateAccountPacketRes pkt)
 {
-    // ÇöÀç »óÅÂ Ã¼Å© : 1.·Îºñ¿¡¼­ Ã¹ ÁøÀÔ / 2.¿ùµå¿¡¼­ Àç ÁøÀÔ
-    // Çö ·Îºñ, Ã¹ ÁøÀÔ
+    //_loginController->CreateAccount(pkt);
+}
+
+void UMyGameInstance::Handle_EnterRoom(PROTOCOL::ObjectInfo info)
+{
+    // í˜„ì¬ ìƒíƒœ ì²´í¬ : 1.ë¡œë¹„ì—ì„œ ì²« ì§„ì… / 2.ì›”ë“œì—ì„œ ì¬ ì§„ì…
+    // í˜„ ë¡œë¹„, ì²« ì§„ì…
     if (_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_LOGIN) {
-        UE_LOG(LogTemp, Error, TEXT("HandleEnterRoom - LoginState"));
-
-        // »óÅÂ º¯°æ
-        _playerState = PROTOCOL::PlayerServerState::SERVER_STATE_GAME;
-
-        // ÇöÀç ÇÃ·¹ÀÌ Ä³¸¯ÅÍ ¸Ş¸ğ¸® ÇÒ´ç ¹× ÀÎÆ÷ º¹»ç
+        
+        // í˜„ì¬ í”Œë ˆì´ì–´ ì •ë³´ ì„¤ì •
+        // ìˆ˜ì •í•„ìš” - ì¸ìŠ¤í„´ìŠ¤ì—ì„œ _myCharacterInfoëŠ” ì˜¤ë¸Œì íŠ¸í’€ì— ë“¤ì–´ê°€ ìˆëŠ” ë³¸ì¸ ì¸í¬ ì£¼ì†Œë¥¼ ì¡°íšŒí•´ì„œ ì‚¬ìš©
+        // ë‹¤ë§Œ ì´ ì‹œì ì—ì„œëŠ” ì˜¤ë¸Œì íŠ¸í’€ì—ì„œ í•´ë‹¹ ì¸ìŠ¤í„´ìŠ¤ ìì²´ê°€ ë§Œë“¤ì–´ì§€ê¸° ì „ì´ë¼
+        // ì•„ë˜ ì½”ë“œì—ì„œ ë©”ëª¨ë¦¬ í•˜ë‚˜ ë§Œë“¤ê³  ë²„ë¦¬ëŠ” ì‹ìœ¼ë¡œ 
         _myCharacterInfo = new PROTOCOL::ObjectInfo();
         _myCharacterInfo->CopyFrom(info);
 
-        // ·Îºñ À§Á¬ Á¦°Å
-        _nowWidget->RemoveFromParent();
-        _nowWidget = nullptr;
+        // ë¡œë¹„ìœ„ì ¯ ì œê±°, ì˜¤í”ˆ ë ˆë²¨ ì „ì— ëª¨ë“  ìœ„ì ¯ì„ ë‹«ì•„ì•¼ í•œë‹¤.
+        _loginController->SetActorTickEnabled(false);
+        _loginController->Destroy();
+        _loginController = nullptr;
+        _uiManager->_mainUI->RemoveFromParent();
 
+        // ì˜¤í”ˆë ˆë²¨ (ë¬¸ì œë§ìŒ, ë‹¤ìŒ ë ˆë²¨ ë„˜ì–´ê°€ë©´ ìê¾¸ íŒ…ê¹€)
         UGameplayStatics::OpenLevel(GetWorld(), *FString(L"/Game/NewMap"), false, "");
     }
 
-    // Çö ¿ùµå, Àç ÁøÀÔ
+    // í˜„ ì›”ë“œ, ì¬ ì§„ì…
     else {
-        _myCharacter->GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+        // í˜„ì¬ í”Œë ˆì´ì–´ ì •ë³´ ì„¤ì •
+        UE_LOG(LogTemp, Error, TEXT("1"));
 
-        // TODO : ¼öÁ¤
-        // ÀÎÆ÷ º¹»ç, hp À§Á¬ ¾÷µ¥ÀÌÆ®, À§Ä¡ ¼³Á¤
+        // ìˆ˜ì • í•„ìš” - ì—¬ê¸°ë„ ë§ˆì°¬ê°€ì§€ë¡œ ìœ„ì™€ ê°™ì€ ì´ìœ 
+        _myCharacterInfo = new PROTOCOL::ObjectInfo();
         _myCharacterInfo->CopyFrom(info);
-        _hudWidget->UpdateHp();
-        _myCharacter->SetActorLocation(FVector(info.pos().locationx(), info.pos().locationy(), info.pos().locationz()));
-
-        // ¸®½ºÆù À§Á¬ ¼û±è, ´Ù½Ã È°¼ºÈ­, ¸¶¿ì½º Á¦°Å
-        _hudWidget->RespawnUI->SetVisibility(ESlateVisibility::Hidden);
-        _hudWidget->RespawnUI->RespawnBtn->SetIsEnabled(true);
-        _gameController->SetShowMouseCursor(false);
         
-        // À§Ä¡ µ¿±âÈ­ È°¼ºÈ­
-        _isMeAlive = true;
-
-        // Ä³¸¯ÅÍ ÀÔ·Â È°¼ºÈ­
-        _myCharacter->EnableInput(_gameController);
-    }
-}
-
-void UMyGameInstance::HandleItemList(PROTOCOL::S_ItemList fromPkt)
-{
-    
-    PROTOCOL::S_AddItem testPkt;
-    testPkt.mutable_items()->CopyFrom(fromPkt.items());
-
-    for (int i = 0; i < fromPkt.items_size(); i++) {
-        // ¾ÆÀÌÅÛ µ¥ÀÌÅÍ Á¶È¸
-        UItemData* itemData = _dataManager->_itemTable[fromPkt.items(i).templateid()];
-        if (IsValid(itemData) == false) {
-            UE_LOG(LogTemp, Error, TEXT("HandleItemList Error"));
-            return;
-        }
-
-        // ¾ÆÀÌÅÛ »ı¼º
-        UItem* item = nullptr;
-        if (itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
-            item = NewObject<UConsumable>();
-        }
-        else if (itemData->itemType == EItemType::ITEM_TYPE_WEAPON) {
-            item = NewObject<UWeapon>();
-        }
-        else if (itemData->itemType == EItemType::ITEM_TYPE_ARMOR) {
-            item = NewObject<UArmor>();
+        if (_myCharacterInfo == nullptr) {
+            UE_LOG(LogTemp, Error, TEXT("mycharacterinfo nullptr"));
         }
         else {
-            return;
+            UE_LOG(LogTemp, Error, TEXT("mycharacterinfo not nullptr"));
         }
 
-        // ¾ÆÀÌÅÛ ¼³Á¤
-        item->SetItemDB(fromPkt.items(i));
-        item->Init(this, fromPkt.items(i).templateid());
+        // HUD UI ì¬ê¸°ë™
+        /*UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+        if (IsValid(hudUI)) 
+            hudUI->Init(false);*/
+
+        // í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ ì¬ê¸°ë™
+        _playerController->Init(false);
+
+        // UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+        // hudUI->UpdateHp();
+
+        // _myCharacter->SetActorLocation(FVector(info.pos().locationx(), info.pos().locationy(), info.pos().locationz()));
+
+        // ë¦¬ìŠ¤í° ìœ„ì ¯ ìˆ¨ê¹€, ë‹¤ì‹œ í™œì„±í™”, ë§ˆìš°ìŠ¤ ì œê±°
+        // hudUI->RespawnUI->SetVisibility(ESlateVisibility::Hidden);
+        // hudUI->RespawnUI->RespawnBtn->SetIsEnabled(true);
+        // _playerController->SetShowMouseCursor(false);
         
-        // c++ ÀÎº¥Åä¸®
-        _inventory.Add(item);
+        // ìœ„ì¹˜ ë™ê¸°í™” í™œì„±í™”
+        // _isMeAlive = true;
         
-        // UI
-        //inventoryWidget->LoadInventory();
+        // ìºë¦­í„° ì…ë ¥ í™œì„±í™”
+        // _myCharacter->EnableInput(_playerController);
     }
 }
 
-void UMyGameInstance::HandleUseItem(PROTOCOL::S_UseItem fromPkt)
+void UMyGameInstance::Handle_LeaveRoom(PROTOCOL::S_Leave_Room fromPkt)
 {
-    // ÀÎº¥ µÚÁ®¼­
-    for (UItem* item : _inventory) {
-        // ÇØ´ç ¾ÆÀÌÅÛ Ã£¾Æ¼­
-        if (item->itemDB.itemDbId == fromPkt.itemdbid()) {
-            
-            // c++
-            // ¼Ò¸ğÇ°
-            if (item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
-                if (--item->itemDB.count <= 0) {
-                    // ±×¸®°í ÇöÀç ¹®Á¦ÀÖÀ½ : UI°¡ Á¦´ë·Î ¾È ºñ¿öÁü
-                    // UI ºê·¯½¬ »èÁ¦µÇ°í ³ª¼­ ¿ìÅ¬¸¯ÇÏ¸é ¿¡·¯
+    // ì•„ì´í…œë¦¬ìŠ¤íŠ¸, í€˜ìŠ¤íŠ¸ë¦¬ìŠ¤íŠ¸ ì •ë¦¬, UI ì •ë¦¬, ê²Œì„ ì˜¤ë¸Œì íŠ¸ ì •ë¦¬
 
-                    // TODO : ÇØ´ç ¾ÆÀÌÅÛ ÆÄ±â, µû·Î ¹­¾î³»´Â °Ô ÁÁ¾Æº¸ÀÓ
-                    _hudWidget->InventoryUI->GetSlotAt(item->itemDB.slot)->SetItem(nullptr);
-                    _inventory.Remove(item);
-                }
-            }
-            // Àåºñ·ù
-            else {
-                item->itemDB.equipped = fromPkt.use();
+    // ì•„ì´í…œ ë¦¬ìŠ¤íŠ¸ ì •ë¦¬
+    //inventory.Empty();
 
-                _hudWidget->InventoryUI->UpdateDamageText();
-                _hudWidget->InventoryUI->UpdateArmorText();
-            }
+    // í€˜ìŠ¤íŠ¸ë¦¬ìŠ¤íŠ¸
+    //_questManager->Clear();
 
-            // ui
-            UInvenSlotWidget* slotWidget = _hudWidget->InventoryUI->GetSlotAt(item->itemDB.slot);
-            slotWidget->UpdateWidget();
-            slotWidget->isRequested = false;
-
-            return;
-        }
+    // UI ì •ë¦¬
+    UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+    if (IsValid(hudUI)) {
+        //hudUI->Clear();
+        
+        // ì˜¤ë¸Œì íŠ¸ ì •ë¦¬í•˜ê¸° ì „ì— ì¬ì…ì¥ ìš”ì²­í•˜ê¸° ìœ„í•´ ë‚´ ìºë¦­í„° ì´ë¦„
+        hudUI->RespawnUI->name = _myCharacterInfo->name();
     }
-}
-
-void UMyGameInstance::AddItem(PROTOCOL::ItemInfo itemInfo)
-{
-    // ¾ÆÀÌÅÛ µ¥ÀÌÅÍ Á¶È¸
-    // UItemData* itemData = nullptr;
-    UItemData** ItemDataPtr = _dataManager->_itemTable.Find(itemInfo.templateid());
-    if (ItemDataPtr == nullptr) {
-        // if (IsValid((*ItemDataPtr)) == false) return;
-        UE_LOG(LogTemp, Error, TEXT("Instance::AddItem() - nullptr"));
-        return;
-    }
-
-    // ¾ÆÀÌÅÛ
-    UItem* item = nullptr;
-
-    // ¼Ò¸ğÇ°
-    if ((*ItemDataPtr)->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
-        // 
-        for (UItem* invenItem : _inventory) {
-            // µ¿ÀÏ ¼Ò¸ğÇ° Á¸Àç
-            if (invenItem->itemDB.templateId == itemInfo.templateid()) {
-                // ¼ö·®¸¸  º¯°æ
-                invenItem->itemDB.count = itemInfo.count();
-
-                // UI ¾÷µ¥ÀÌÆ®
-                if (IsValid(_hudWidget) && IsValid(_hudWidget->InventoryUI))
-                    _hudWidget->InventoryUI->SetInvenSlot(invenItem);
-
-                // 
-                return;
-            }
-        }
-
-        // ¼Ò¸ğÇ° »õ·Î »ı¼º
-        item = NewObject<UConsumable>();
-    }
-
-    // ¹«±â
-    else if ((*ItemDataPtr)->itemType == EItemType::ITEM_TYPE_WEAPON)
-        item = NewObject<UWeapon>();
-    // ¹æ¾î±¸
-    else if ((*ItemDataPtr)->itemType == EItemType::ITEM_TYPE_ARMOR)
-        item = NewObject<UArmor>();
-    else 
-        return;
-
-    // ¾ÆÀÌÅÛ ¼³Á¤
-    item->SetItemDB(itemInfo);
-    item->Init(this, itemInfo.templateid());
-
-    // c++ ÀÎº¥¿¡ Ãß°¡
-    _inventory.Add(item);
     
-    // UI ¾÷µ¥ÀÌÆ®
-    if (IsValid(_hudWidget) && IsValid(_hudWidget->InventoryUI)) 
-        _hudWidget->InventoryUI->SetInvenSlot(item);
+    // ê²Œì„ ì˜¤ë¸Œì íŠ¸ ì •ë¦¬
+    _objectsManager->Clear();
 }
 
-void UMyGameInstance::HandleChangeStat(PROTOCOL::ObjectInfo info)
+void UMyGameInstance::Handle_ItemList(PROTOCOL::S_ItemList fromPkt)
+{
+    for (int i = 0; i < fromPkt.items_size(); i++) 
+        AddItem(fromPkt.items(i));
+}
+
+void UMyGameInstance::Handle_UseItem(PROTOCOL::S_UseItem fromPkt)
+{
+    // ì†Œëª¨í’ˆ ì•„ì´í…œì„ ì‚¬ìš©í–ˆë‹¤ -> ìˆ˜ëŸ‰ ê°ì†Œë§Œ, íš¨ê³¼ëŠ” ë‹¤ë¥¸ íŒ¨í‚·ìœ¼ë¡œ ì˜¨ë‹¤.(ì—…ë°ì´íŠ¸ë¡œ ì²˜ë¦¬í•˜ëŠ” ê²ƒë„..)
+
+    // ì•„ì´í…œ íƒìƒ‰
+    UItem* item = inventory.FindRef(fromPkt.item().slot());
+    if (IsValid(item) == false || item->itemData->itemType != EItemType::ITEM_TYPE_CONSUMABLE)
+        return;
+
+    // c++ ë°ì´í„° ì—…ë°ì´íŠ¸
+    item->itemDB.count = fromPkt.item().count();
+    
+    // UI ë°ì´í„° ì—…ë°ì´íŠ¸
+    UMyHUDWidget* hudWidget = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+    if (IsValid(hudWidget)) 
+        hudWidget->InventoryUI->UpdateSlot(item->itemDB.slot);
+}
+
+void UMyGameInstance::Handle_EquipItem(PROTOCOL::S_EquipItem fromPkt)
+{
+    // ì•„ì´í…œ íƒìƒ‰
+    UItem* item = inventory.FindRef(fromPkt.slot());
+    if (IsValid(item) == false || item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE)
+        return;
+
+    // c++ ì¥ì°©/í•´ì œ
+    item->itemDB.equipped = fromPkt.equip();
+
+    // UI ì—…ë°ì´íŠ¸
+    UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+    if (IsValid(hudUI)) {
+        hudUI->InventoryUI->UpdateSlot(item->itemDB.slot);
+
+        // ì´ê±° ìˆ˜ì •í•´ì•¼ëœë‹¤.
+        // hudUI->InventoryUI->GetSlotAt(item->itemDB.slot)->SetRequestTimer(false);
+    }
+}
+
+/*
+    HandleRemoveItem
+    ì œê±° ë°©ì‹ : ì–¸ë¦¬ì–¼ì˜ TArrayëŠ” ì œê±°(Remove)ë¥¼ í•˜ë©´ ë°°ì—´ ë‚´ ìˆœì„œê°€ ìœ ì§€ê°€ ì•ˆë¨.
+    ex1) [0] ì² ìˆ˜ [1] ì˜í¬ [2] ë¯¼ìˆ˜ -> ì¸ë±ìŠ¤1 ì œê±° -> [0] ì² ìˆ˜ [1] ë¯¼ìˆ˜ ->
+    ex2) ì¸ë±ìŠ¤ 0 ì¶”ê°€ -> [0] ì˜í¬ [1] ì² ìˆ˜ [2] ë¯¼ìˆ˜
+    ë‚˜ëŠ” ë°°ì—´ì˜ ìˆœì„œê°€ ê³§ ìŠ¬ë¡¯ì´ë‹¤. ê³ ë¡œ ì‚­ì œí•˜ë”ë¼ë„ ìœ ì§€í•´ì•¼ëŒ
+
+    TArrayì—ì„œ TMapìœ¼ë¡œ ë³€ê²½
+    ì–¸ë¦¬ì–¼ì˜ TArrayëŠ” c++ì˜ ë°°ì—´ê³¼ ë¹„ì–´ìˆëŠ” ì¸ë±ìŠ¤ë¡œ ì ‘ê·¼ì‹œ ë¬¸ì œê°€ ìƒê¹€
+*/
+void UMyGameInstance::Handle_RemoveItem(PROTOCOL::S_RemoveItem fromPkt)
+{
+    // ì œê±°í•  ì•„ì´í…œ ë¦¬ìŠ¤íŠ¸
+    for (int32 removeSlot : fromPkt.slots()) {
+        UE_LOG(LogTemp, Error, TEXT("RemoveItem Slot : %d"), removeSlot);
+
+        // c++ ì œê±°
+        inventory.Remove(removeSlot);
+
+        // ui ì œê±°
+        UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+        if (IsValid(hudUI)) 
+            hudUI->InventoryUI->SetSlot(removeSlot);
+    }
+}
+
+void UMyGameInstance::Handle_AddItem(PROTOCOL::S_AddItem fromPkt)
+{
+    for (int i = 0; i < fromPkt.items_size(); i++) 
+        AddItem(fromPkt.items(i));
+}
+
+void UMyGameInstance::Handle_UpdateItem(PROTOCOL::S_UpdateItem fromPkt)
+{
+    for (int i = 0; i < fromPkt.items_size(); i++) 
+        UpdateItem(fromPkt.items(i));
+}
+
+void UMyGameInstance::Handle_ChangeStat(PROTOCOL::ObjectInfo info)
 {
     // Data
     _myCharacterInfo->mutable_stat()->CopyFrom(info.stat());
     
     // UI
+    UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+    if (IsValid(hudUI) == false)
+        return;
+
     // Level
-    _hudWidget->UpdateLevel();
+    hudUI->UpdateLevel();
 
     // Hp
-    _hudWidget->UpdateHp();
+    hudUI->UpdateHp();
 
     // Exp
-    _hudWidget->UpdateExp();
+    hudUI->UpdateExp();
     
-    // damage, defence - ±âº» °ø,¹æ
-    _hudWidget->InventoryUI->UpdateDamageText();
+    // damage, defence - ê¸°ë³¸ ê³µ,ë°©
+    hudUI->InventoryUI->UpdateDamageText();
     // _hudWidget->InventoryUI->UpdateArmorText();
 }
 
-void UMyGameInstance::HandleCreatePlayer(PROTOCOL::ObjectInfo info)
+void UMyGameInstance::Handle_CreatePlayer(PROTOCOL::ObjectInfo info)
 {
-    // TODO : »óÅÂ°¡ ·ÎºñÀÎÁö Ã¼Å©
+    // TODO : ìƒíƒœê°€ ë¡œë¹„ì¸ì§€ ì²´í¬
     
-    // ÇöÀç À§Á¬ = ·ÎºñÀ§Á¬
-    ULobbyWidget* lobby = Cast<ULobbyWidget>(_nowWidget);
+    // í˜„ì¬ ìœ„ì ¯ = ë¡œë¹„ìœ„ì ¯
+    ULobbyWidget* lobby = Cast<ULobbyWidget>(_uiManager->_mainUI);
 
-    // ½ÇÆĞ
+    // ì‹¤íŒ¨
     if (info.name().compare("ExistName") == 0) {
         lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail : ExistName"));
     }
     else if (info.name().compare("Fail") == 0) {
         lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail"));
     }
-    // ¼º°ø
+    // ì„±ê³µ
     else {
-        // Ä³¸¯ÅÍ ¸®½ºÆ®¿¡ Ãß°¡
+        // ìºë¦­í„° ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€
         _myCharacterList.Add(info);
 
-        // ÆË¾÷ ´İ°í
+        // íŒì—… ë‹«ê³ 
         lobby->PopUpWidget->RemoveFromParent();
         lobby->PopUpWidget = nullptr;
 
-        // Lobby ¾÷µ¥ÀÌÆ®
+        // Lobby ì—…ë°ì´íŠ¸
         lobby->AddSlotList(info);
     }
 }
 
-void UMyGameInstance::HandleAddExp(int32 exp)
+void UMyGameInstance::Handle_AddExp(int32 exp)
 {
+    int32 difference = exp - _myCharacterInfo->stat().exp();
+
     // Data
     _myCharacterInfo->mutable_stat()->set_exp(exp);
 
     // UI
-    _hudWidget->UpdateExp();
+    Cast<UMyHUDWidget>(_uiManager->_mainUI)->UpdateExp();
+
+    FString str;
+    str.Append(FString::Printf(TEXT("ê²½í—˜ì¹˜ ")))
+        .Append(FString::FromInt(difference))
+        .Append(FString::Printf(TEXT(" íšë“")));
+    
+    if(IsValid(_playerController))
+        _playerController->SystemChat(str);
 }
+
+void UMyGameInstance::Handle_Spawn(PROTOCOL::S_Spawn fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->SpawnObject(fromPkt);
+    else
+        UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_Spawn() Error - Invalid GameController"));
+}
+
+void UMyGameInstance::Handle_DeSpawn(PROTOCOL::S_DeSpawn fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->DeSpawnObject(fromPkt);
+    else
+        UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_DeSpawn() Error - Invalid GameController"));
+}
+
+void UMyGameInstance::Handle_Skill(PROTOCOL::S_Skill fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->Skill(fromPkt);
+}
+
+void UMyGameInstance::Handle_Chat(PROTOCOL::S_Chat fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->PlayerChat(fromPkt);
+}
+
+void UMyGameInstance::Handle_ChangeHp(PROTOCOL::S_ChangeHp fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->ChangeHP(fromPkt);
+}
+
+void UMyGameInstance::Handle_Die(PROTOCOL::S_Die fromPkt)
+{
+    if (IsValid(_playerController))
+        _playerController->Die(fromPkt);
+}
+
+void UMyGameInstance::Handle_AddQuest(PROTOCOL::QuestInfo questInfo)
+{
+    UE_LOG(LogTemp, Error, TEXT("Handle_AddQuest"));
+    
+    _questManager->AddQuest(questInfo);
+}
+
+void UMyGameInstance::Handle_RemoveQuest(PROTOCOL::S_RemoveQuest fromPkt)
+{
+    if (fromPkt.result() == true)
+        _questManager->RemoveQuest(fromPkt.questid());
+}
+
+void UMyGameInstance::Handle_CompleteQuest(PROTOCOL::S_CompleteQuest fromPkt)
+{
+    // ë³´ìƒì€ ë”°ë¥¸ë°ì„œ ì§„í–‰í•œë‹¤. ì—¬ê¸°ì„œëŠ” í€˜ìŠ¤íŠ¸ë¥¼ ì™„ë£Œ ì²˜ë¦¬ë§Œ í•˜ë©´ëœë‹¤.
+    if (fromPkt.result() == true)
+        _questManager->CompleteQuest(fromPkt.questid());
+}
+
+void UMyGameInstance::Handle_UpdateQuest(PROTOCOL::S_UpdateQuest fromPkt)
+{
+    _questManager->UpdateQuest(fromPkt.questinfo());
+}
+
+

@@ -3,13 +3,14 @@
 		{
 			"id": 0,
 			"name": "Crunch",
+			"asset": "'/Game/BP_Monster.BP_Monster'",
 			"stat": {
 				"level": 1,
 				"totalexp": 250,
 				"maxhp": 500,
 				"hp": 500,
 				"damage": 40,
-				"defence" : 20,
+				"defence": 20,
 				"speed": 350,
 				"attackdistance": 150,
 				"noticedistance": 700,
@@ -42,6 +43,7 @@
 		{
 			"id": 1,
 			"name": "BlackCrunch",
+			"asset": "'/Game/BP_BlackCrunch.BP_BlackCrunch'",
 			"stat": {
 				"level": 1,
 				"totalexp": 500,

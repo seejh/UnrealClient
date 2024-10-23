@@ -17,15 +17,29 @@ class MMOCLIENT_API UMyHUDWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 		void OnClickedChatBtn();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 		void PlayLevelUpWidgetAnim();
 
-	void Init();
+	void Init(bool isFirst);
+
+	// 퀘스트UI와 인벤토리 UI 정리 - 일단 사용안함
+	void Clear();
+
+	// 
+	void Reset();
+
+	// 체력UI 업데이트
 	void UpdateHp();
+	
+	// 경험치UI 업데이트
 	void UpdateExp();
+	
+	// 레벨UI 업데이트
 	void UpdateLevel();
+	
+	// 채팅UI 업데이트
 	void AddChatMessage(FString& message);
 
 public:
@@ -59,6 +73,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 		class UInventoryWidget* InventoryUI;
 
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+		class UInteractWidget* InteractUI;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+		class UDialogueWidget* DialogueUI;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+		class UQuestLogWidget* QuestUI;
+
 	UPROPERTY(meta = (BindWidget))
 		class UButton* ChatBtn;
+public:
+	class UMyGameInstance* _ownerInstance;
 };

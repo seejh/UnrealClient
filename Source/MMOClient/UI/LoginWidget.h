@@ -4,14 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-
-
-
+#include"../Data/GameStruct.h"
 #include "LoginWidget.generated.h"
 
-/**
- * 
- */
+class UServerListWidget;
+class UEditableTextBox;
+class UButton;
 UCLASS()
 class MMOCLIENT_API ULoginWidget : public UUserWidget
 {
@@ -22,17 +20,18 @@ public:
 public:
 	UFUNCTION(BlueprintCallable)
 		void OnClickedLogin();
-	
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-		class UEditableTextBox* IdEditableTextBox;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-		class UEditableTextBox* PwEditableTextBox;
-	UPROPERTY(meta = (BindWidget))
-		class UButton* LoginBtn;
-
+	void CloseServerList();
+	void OpenServerList();
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+		UEditableTextBox* IdEditableTextBox;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+		UEditableTextBox* PwEditableTextBox;
+	UPROPERTY(meta = (BindWidget))
+		UButton* LoginBtn;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+		UServerListWidget* serverListPopUp;
 public:
 	FTimerHandle _handle;
 };

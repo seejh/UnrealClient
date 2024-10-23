@@ -15,35 +15,29 @@ void USlotTooltipWidget::UpdateToolTip(UItem* item)
 	description->SetText(FText::FromString(item->itemData->description));
 
 	// 디테일
-	FString text("");
+	FString txt("");
 
-	// 디테일 - 무기
+	// 무기
 	if (item->itemData->itemType == EItemType::ITEM_TYPE_WEAPON) {
-		// 대미지 추출 및 텍스트 세팅
-		text += "Damage : ";
-		text += FString::FromInt(Cast<UWeaponData>(item->itemData)->damage);
+		txt.Append("Damage : ")
+			.Append(FString::FromInt(Cast<UWeaponData>(item->itemData)->damage));
 
-		// 설정
-		details->SetText(FText::FromString(text));
+		details->SetText(FText::FromString(txt));
 	}
 
-	// 디테일 - 방어구
+	// 방어구
 	else if (item->itemData->itemType == EItemType::ITEM_TYPE_ARMOR) {
-		// 방어도 추출 및 텍스트 세팅
-		text += "Defence : ";
-		text += FString::FromInt(Cast<UArmorData>(item->itemData)->defence);
+		txt.Append("Defence : ")
+			.Append(FString::FromInt(Cast<UArmorData>(item->itemData)->defence));
 
-		// 설정
-		details->SetText(FText::FromString(text));
+		details->SetText(FText::FromString(txt));
 	}
 
-	// 디테일 - 소모품
+	// 소모품
 	else if (item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
-		// 회복력 추출 및 텍스트 세팅
-		text += "Recovery : ";
-		text += FString::FromInt(Cast<UConsumableData>(item->itemData)->recovery);
-
-		// 설정
-		details->SetText(FText::FromString(text));
+		txt.Append("Recovery : ")
+			.Append(FString::FromInt(Cast<UConsumableData>(item->itemData)->recovery));
+		
+		details->SetText(FText::FromString(txt));
 	}
 }

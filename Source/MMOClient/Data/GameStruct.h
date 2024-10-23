@@ -3,12 +3,141 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include"../MyGameInstance.h"
+// #include"../MyGameInstance.h"
 #include"../Proto/Protocol3.pb.h"
 
 #include "Engine/DataTable.h"
 #include "GameStruct.generated.h"
 
+
+/*------------------------------------------------------------------
+	USTRUCT는 값 유형으로 포인터로 사용할 수 없다.
+	
+-------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------
+	WebPacket
+------------------------------------------------------------------*/
+
+// 구글 oauth
+USTRUCT(BlueprintType)
+struct FGoogleLoginRequestPacket {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		FString ID;
+	UPROPERTY()
+		FString PW;
+	UPROPERTY()
+		bool ReturnSecureToken;
+};
+
+USTRUCT(BlueprintType)
+struct FGoogleLoginResponsePacket {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		FString Kind;
+	UPROPERTY()
+		FString LocalId;
+	UPROPERTY()
+		FString Email;
+	UPROPERTY()
+		FString DisplayName;
+	UPROPERTY()
+		FString IdToken;
+	UPROPERTY()
+		bool Registered;
+	UPROPERTY()
+		FString RefreshToken;
+	UPROPERTY()
+		FString ExpiresIn;
+};
+
+// 기존
+
+USTRUCT(BlueprintType)
+struct FServerInfo {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FString Name;
+
+	UPROPERTY()
+	FString IpAddress;
+	
+	UPROPERTY()
+	int32 Port;
+
+	UPROPERTY()
+	int32 BusyScore;
+};
+
+// TEST WEB
+USTRUCT(BlueprintType)
+struct FCreateAccountPacketReq {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FString AccountName;
+	
+	UPROPERTY()
+	int32 AccountPw;
+};
+
+USTRUCT(BlueprintType)
+struct FCreateAccountPacketRes {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	bool CreateOk;
+};
+
+USTRUCT(BlueprintType)
+struct FLoginAccountReq {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FString AccountName;
+
+	UPROPERTY()
+	FString AccountPw;
+};
+
+USTRUCT(BlueprintType)
+struct FLoginAccountRes {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	bool LoginOk;
+
+	UPROPERTY()
+	FString AccountName;
+
+	UPROPERTY()
+	FString Token;
+
+	UPROPERTY()
+	TArray<FServerInfo> serverList;
+};
+
+USTRUCT(BlueprintType)
+struct FLoginFirebasePacketReq {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		FString Token;
+};
+
+USTRUCT(BlueprintType)
+struct FLoginFirebasePacketRes {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		bool LoginOK;
+	UPROPERTY()
+		FString JwtAccessToken;
+};
 
 /*---------------------------------------------------------------
 	아이템 관련
@@ -42,7 +171,8 @@ enum class EArmorType : uint8 {
 UENUM(BlueprintType)
 enum class EConsumableType : uint8 {
 	CONSUMABLE_TYPE_NONE = 0,
-	CONSUMABLE_TYPE_POTION,
+	CONSUMABLE_TYPE_HP_POTION,
+	CONSUMABLE_TYPE_MP_POTION,
 };
 
 
@@ -243,6 +373,9 @@ public:
 	FString name;
 
 	UPROPERTY(BlueprintReadWrite)
+	FString assetPath;
+
+	UPROPERTY(BlueprintReadWrite)
 	FStatData statData;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -278,3 +411,108 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	ESkillType skillType;
 };
+
+/*------------------------------------------------------------------
+	퀘스트 관련
+------------------------------------------------------------------*/
+UENUM(BlueprintType)
+enum class EQuestType : uint8 {
+	QUEST_TYPE_INTERACT,
+	QUEST_TYPE_KILL,
+	QUEST_TYPE_COLLECT,
+};
+
+UCLASS()
+class UQuestData : public UObject {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		int32 id;
+	UPROPERTY()
+		FString name;
+	UPROPERTY()
+		FString description;
+
+
+	// 퀘스트 타입, 목표물, 목표치
+	UPROPERTY()
+		EQuestType type;
+	UPROPERTY()
+		int32 objectiveId;
+	UPROPERTY()
+		int32 quantity;
+
+	//
+	UPROPERTY()
+		int32 QuestGiver;
+	UPROPERTY()
+		int32 QuestEnder;
+	UPROPERTY()
+		int32 dialogueId;
+	UPROPERTY()
+		int32 dialogueEndId;
+
+	// 보상
+	UPROPERTY()
+		int32 rewardExp;
+	UPROPERTY()
+		int32 rewardMoney;
+	UPROPERTY()
+		TMap<int32, int32> rewardItems;
+};
+
+/*------------------------------------------------------------------
+	NPC 관련
+------------------------------------------------------------------*/
+USTRUCT(BlueprintType)
+struct FDialogue {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		int32 dialogueId;
+	UPROPERTY()
+		TArray<FString> Talks;
+	UPROPERTY()
+		TArray<FString> TalkEnds;
+};
+
+UENUM(BlueprintType)
+enum class ENpcType : uint8 {
+	NPC_TYPE_NONE = 0,
+	NPC_TYPE_NORMAL,
+	NPC_TYPE_MERCHANT,
+};
+
+UCLASS()
+class UNpcData : public UObject {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		int32 id;
+	UPROPERTY()
+		FString name;
+	UPROPERTY()
+		ENpcType npcType;
+	UPROPERTY()
+		FString greeting;
+	UPROPERTY()
+		TMap<int32, FDialogue> dialogues;
+	UPROPERTY()
+		TArray<int> quests;
+};
+
+/*------------------------------------------------------------------
+	NPC 대화 관련
+------------------------------------------------------------------*/
+
+
+UCLASS()
+class UNpcDialogueData : public UObject {
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+		int32 npcId;
+	UPROPERTY()
+		TMap<int32, FDialogue> dialogues;
+};
+

@@ -1,0 +1,65 @@
+{
+  "Quests": [
+    {
+      "Id": 1,
+      "Name": "NPC_2와 대화하기",
+      "Description": "뒤편에 있는 NPC_2와 대화하세요.",
+      "Type": "Interact",
+      "ObjectiveId": 2,
+      "Quantity": 1,
+      "QuestGiver": 1,
+      "QuestEnder": 2,
+      "DialogueId": 1,
+      "DialogueEndId": 2,
+      "RewardExp": 100,
+      "RewardMoney": 0,
+      "RewardItems": [
+        {
+          "ItemId": 1,
+          "ItemQuantity": 1
+        }
+      ]
+    },
+    {
+      "Id": 2,
+      "Name": "크런치 처치하기2",
+      "Description": "크런치 10마리를 처치하고 NPC_2에게 보고",
+      "Type": "Kill",
+      "ObjectiveId": 0,
+      "Quantity": 10,
+      "QuestGiver": 2,
+      "QuestEnder": 2,
+      "DialogueId": 1,
+      "DialogueEndId": 3,
+      "RewardExp": 100,
+      "RewardMoney": 0,
+      "RewardItems": [
+        {
+          "ItemId": 2,
+          "ItemQuantity": 1
+        }
+      ]
+    },
+    {
+      "Id": 3,
+      "Name": "크런치 처치하기1",
+      "Description": "크런치 5마리를 처치하고 NPC_1에게 보고",
+      "Type": "Kill",
+      "ObjectiveId": 0,
+      "Quantity": 5,
+      "QuestGiver": 1,
+      "QuestEnder": 1,
+      "DialogueId": 2,
+      "DialogueEndId": 3,
+      "RewardExp": 100,
+      "RewardMoney": 0,
+      "RewardItems": [
+        {
+          "ItemId": 1,
+          "ItemQuantity": 1
+        }
+      ]
+    }
+
+  ]
+}

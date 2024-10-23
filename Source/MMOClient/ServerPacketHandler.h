@@ -38,12 +38,20 @@ bool Handle_S_SKILL(UMyGameInstance* instance, PROTOCOL::S_Skill fromPkt);
 bool Handle_S_CHAT(UMyGameInstance* instance, PROTOCOL::S_Chat fromPkt);
 bool Handle_S_CHANGEHP(UMyGameInstance* instance, PROTOCOL::S_ChangeHp fromPkt);
 bool Handle_S_DIE(UMyGameInstance* instance, PROTOCOL::S_Die fromPkt);
+bool Handle_S_EQUIPITEM(UMyGameInstance* instance, PROTOCOL::S_EquipItem fromPkt);
 bool Handle_S_USEITEM(UMyGameInstance* instance, PROTOCOL::S_UseItem fromPkt);
 bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_AddItem fromPkt);
+bool Handle_S_UPDATEITEM(UMyGameInstance* instance, PROTOCOL::S_UpdateItem fromPkt);
+bool Handle_S_REMOVEITEM(UMyGameInstance* instance, PROTOCOL::S_RemoveItem fromPkt);
 bool Handle_S_CHANGE_STAT(UMyGameInstance* instance, PROTOCOL::S_ChangeStat fromPkt);
 bool Handle_S_CREATE_PLAYER(UMyGameInstance* instance, PROTOCOL::S_CreatePlayer fromPkt);
 bool Handle_S_ADD_EXP(UMyGameInstance* instance, PROTOCOL::S_AddExp fromPkt);
 bool Handle_S_LEVEL_UP(UMyGameInstance* instance, PROTOCOL::S_LevelUp fromPkt);
+bool Handle_S_ADD_QUEST(UMyGameInstance* instance, PROTOCOL::S_AddQuest fromPkt);
+bool Handle_S_QUESTLIST(UMyGameInstance* instance, PROTOCOL::S_QuestList fromPkt);
+bool Handle_S_REMOVE_QUEST(UMyGameInstance* instance, PROTOCOL::S_RemoveQuest fromPkt);
+bool Handle_S_COMPLETE_QUEST(UMyGameInstance* instance, PROTOCOL::S_CompleteQuest fromPkt);
+bool Handle_S_UPDATE_QUEST(UMyGameInstance* instance, PROTOCOL::S_UpdateQuest fromPkt);
 
 /*----------------------------------------------------
 	ServerPacketHandler
@@ -73,8 +81,14 @@ public:
 	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_Move toPkt);
 	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_Skill toPkt);
 	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_Chat toPkt);
+	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_EquipItem toPkt);
 	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_UseItem toPkt);
 	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_CreatePlayer toPkt);
+	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_AddQuest toPkt);
+	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_RemoveQuest toPkt);
+	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_CompleteQuest toPkt);
+	TSharedPtr<FSendBuffer> MakeSendBuffer(PROTOCOL::C_UpdateQuest toPkt);
+
 private:
 	/*---------------------------------------------------------------------------------------------
 		HandlePacket(Recv) - Private

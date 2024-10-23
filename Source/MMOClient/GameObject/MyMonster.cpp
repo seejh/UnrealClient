@@ -3,9 +3,11 @@
 
 #include "MyMonster.h"
 
+#include<Components/WidgetComponent.h>
 #include"../UI/MonsterHPWidget.h"
-
 #include"../MyAIController.h"
+#include"../MyGameInstance.h"
+#include"../ObjectsManager.h"
 
 // Sets default values
 AMyMonster::AMyMonster()
@@ -13,7 +15,7 @@ AMyMonster::AMyMonster()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	AIControllerClass = AMyAIController::StaticClass();
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	AutoPossessAI = EAutoPossessAI::Spawned;
 
 	// HPBar 컴포넌트 생성
 	HPBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBar"));
@@ -27,6 +29,9 @@ AMyMonster::AMyMonster()
 		HPBar->SetWidgetSpace(EWidgetSpace::Screen);
 		HPBar->SetDrawSize(FVector2D(150.f, 15.f));
 		HPBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("AMyMonster::AMyMonster() Error - Invalid MonsterHPWidget"));
 	}
 }
 
@@ -50,7 +55,7 @@ void AMyMonster::OnAttack()
 
 void AMyMonster::OnAttacked()
 {
-	Super::OnAttacked();
+	// Super::OnAttacked();
 }
 
 void AMyMonster::OnDead()
@@ -63,8 +68,11 @@ void AMyMonster::UpdateHP()
 	Super::UpdateHP();
 
 	UMonsterHPWidget* hpWidget = Cast<UMonsterHPWidget>(HPBar->GetWidget());
-	if (IsValid(hpWidget)) 
-		hpWidget->SetHPBar((float)info->stat().hp() / (float)info->stat().maxhp());
+	if (IsValid(hpWidget)) {
+		PROTOCOL::ObjectInfo* info = Cast<UMyGameInstance>(GetGameInstance())->_objectsManager->_objectInfos.Find(_objectId);
+		if (info) 
+			hpWidget->SetHPBar((float)info->stat().hp() / (float)info->stat().maxhp());
+	}
 }
 
 void AMyMonster::SetActorActive(bool flag)

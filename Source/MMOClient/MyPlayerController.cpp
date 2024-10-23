@@ -10,12 +10,16 @@
 #include"Buffer.h"
 #include"ThreadHandler.h"
 #include"GameObject/MyMonster.h"
-#include"GameObject/ObjectManager.h"
+#include"ObjectManager.h"
 #include"GameObject/MyCharacterBase.h"
+#include"GameObject/MyNpc.h"
 #include"MyAIController.h"
 #include"UI/InventoryWidget.h"
 #include"UI/RespawnWidget.h"
-#include"Data/DataManager.h"
+#include"DataManager.h"
+#include"UIManager.h"
+#include"ObjectsManager.h"
+#include"UI/QuestLogWidget.h"
 
 #include<Kismet/GameplayStatics.h>
 #include<Blueprint/WidgetBlueprintLibrary.h>
@@ -25,26 +29,58 @@
 ---------------------------------------------------------------------------------------------*/
 AMyPlayerController::AMyPlayerController()
 {
+}
 
-	// BP - Player
-	UObject* cls = StaticLoadObject(UObject::StaticClass(), nullptr, TEXT("Blueprint'/Game/BP_Player.BP_Player'"));
-	if (!IsValid(cls)) UE_LOG(LogTemp, Error, TEXT("BP_Player Load Failed"));
-	UBlueprint* bp = Cast<UBlueprint>(cls);
-	_bpPlayer = (UClass*)bp->GeneratedClass;
+void AMyPlayerController::Init(bool isFirst)
+{
+	UE_LOG(LogTemp, Error, TEXT("PC::Init"));
 
-	// BP - Monster
-	UObject* cls2 = StaticLoadObject(UObject::StaticClass(), nullptr, TEXT("Blueprint'/Game/BP_Monster.BP_Monster'"));
-	if (!IsValid(cls2)) UE_LOG(LogTemp, Error, TEXT("BP_Monster Load Failed"));
-	UBlueprint* bp2 = Cast<UBlueprint>(cls2);
-	_bpMonster = (UClass*)bp2->GeneratedClass;
+	AMMOClientCharacter* myPlayer = nullptr;
 
-	ConstructorHelpers::FObjectFinder<USkeletalMesh> BlackCrunchAsset(TEXT("/Game/ParagonCrunch/Characters/Heroes/Crunch/Skins/Tier_3/BlackSite/Meshes/Crunch_Black_Site"));
-	if (BlackCrunchAsset.Succeeded())
-		_blackCrunchMesh = BlackCrunchAsset.Object;
+	if (isFirst) {
+		// 게임인스턴스와 서로 참조 설정
+		_ownerInstance = Cast<UMyGameInstance>(GetGameInstance());
+		_ownerInstance->_playerController = this;
 
-	ConstructorHelpers::FObjectFinder<USkeletalMesh> CrunchAsset(TEXT("/Game/ParagonCrunch/Characters/Heroes/Crunch/Meshes/Crunch"));
-	if (CrunchAsset.Succeeded())
-		_crunchMesh = CrunchAsset.Object;
+		// HUD UI 시작
+		UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->CreateMainUI(_ownerInstance->_uiManager->InGameUIClass));
+		if (IsValid(hudUI)) {
+			hudUI->Init(true);
+			hudUI->AddToViewport();
+		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("AMyPlayerController::BeginPlay() Error - Invalid InGameUI"));
+			return;
+		}
+
+		// 스폰되는 기본 캐릭터 찾아서 제거
+		myPlayer = Cast<AMMOClientCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+		if (IsValid(myPlayer) == false) {
+			UE_LOG(LogTemp, Error, TEXT("AMyPlayerController::BeginPlay() Error - Invalid PlayerCharacter"));
+			return;
+		}
+		myPlayer->Destroy();
+	}
+	else {
+		// HUD UI 재기동
+		UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+		if (IsValid(hudUI))
+			hudUI->Reset();
+	}
+	
+	// 오브젝트 매니저에서 내 캐릭터 생성
+	myPlayer = Cast<AMMOClientCharacter>(_ownerInstance->_objectsManager->Add(*(_ownerInstance->_myCharacterInfo)));
+	myPlayer->_objectId = _ownerInstance->_myCharacterInfo->objectid();
+
+	// 게임인스턴스의 내 정보와 참조 연결
+	_ownerInstance->_myCharacter = myPlayer;
+	_ownerInstance->_myCharacterInfo = _ownerInstance->_objectsManager->GetObjectInfoById(myPlayer->_objectId);
+
+	// 컨트롤러 빙의
+	Possess(myPlayer);
+
+	// 플레이어 게임 스테이트 변경 (퀘스트매니저문제로 여기서 처리)
+	_ownerInstance->_playerState = PROTOCOL::PlayerServerState::SERVER_STATE_GAME;
 }
 
 void AMyPlayerController::BeginPlay()
@@ -52,45 +88,51 @@ void AMyPlayerController::BeginPlay()
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Error, TEXT("PC::BeginPlay"));
 
-	// Owner 게임인스턴스 설정
-	_ownerInstance = Cast<UMyGameInstance>(GetGameInstance());
-	_ownerInstance->_gameController = this;
+	Init(true);
+	//// Owner 게임인스턴스 설정
+	//_ownerInstance = Cast<UMyGameInstance>(GetGameInstance());
+	//_ownerInstance->_playerController = this;
 
-	// HUD
-	if (IsValid(_ownerInstance->MyHUDWidgetClass)) {
-		_ownerInstance->_hudWidget = Cast<UMyHUDWidget>(CreateWidget(GetWorld(), _ownerInstance->MyHUDWidgetClass));
-		if (IsValid(_ownerInstance->_hudWidget)) {
-			_ownerInstance->_hudWidget->AddToViewport();
-			_ownerInstance->_hudWidget->Init();
-		}
-	}
+	//// 플레이어 게임 스테이트(UMyGameInstance::Handle_EnterRoom에서 이리로 이동, 퀘스트매니저 문제로)
+	//_ownerInstance->_playerState = PROTOCOL::PlayerServerState::SERVER_STATE_GAME;
 
-	// 오브젝트 매니저 시동
-	_objectManager = new FObjectManager();
-	if (!_objectManager->Init(this))
-		UE_LOG(LogTemp, Error, TEXT("PC::BeginPlay - ObjectManager Init Failed"));
+	//// HUD
+	//UMyHUDWidget* ui = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->CreateMainUI(_ownerInstance->_uiManager->InGameUIClass));
+	//if (IsValid(ui)) {
+	//	ui->Init(true);
+	//	ui->AddToViewport();
+	//}
+	//else {
+	//	UE_LOG(LogTemp, Error, TEXT("AMyPlayerController::BeginPlay() Error - Invalid InGameUI"));
+	//	return;
+	//}
+	//
+	//// 스폰되는 기본 캐릭터 찾아서 제거
+	//AMMOClientCharacter* myPlayer = Cast<AMMOClientCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+	//if (IsValid(myPlayer) == false) {
+	//	UE_LOG(LogTemp, Error, TEXT("AMyPlayerController::BeginPlay() Error - Invalid PlayerCharacter"));
+	//	return;
+	//}
+	//myPlayer->Destroy();
 
-	// 기본 생성되는 캐릭 삭제
-	AMMOClientCharacter* myPlayer = Cast<AMMOClientCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	GetWorld()->DestroyActor(myPlayer);
+	//// 오브젝트 매니저를 통해서 새로 생성
+	//myPlayer = Cast<AMMOClientCharacter>(_ownerInstance->_objectsManager->Add(*(_ownerInstance->_myCharacterInfo)));
+	//myPlayer->_objectId = _ownerInstance->_myCharacterInfo->objectid();
 
-	// 오브젝트 매니저를 통해 생성      , 액터 활성화, 컨트롤러 빙의
-	myPlayer = Cast<AMMOClientCharacter>(_objectManager->Add(*(_ownerInstance->_myCharacterInfo)));
-	_ownerInstance->_myCharacterInfo = myPlayer->info;
-	myPlayer->SetActorHiddenInGame(false);
-	Possess(myPlayer);
-	
-	// 인스턴스에서 이 캐릭에 대한 참조 설정
-	_ownerInstance->_myCharacter = myPlayer;
+	//// 게임인스턴스에 내 정보에 포인터 연결
+	//_ownerInstance->_myCharacter = myPlayer;
+	//_ownerInstance->_myCharacterInfo = _ownerInstance->_objectsManager->GetObjectInfoById(myPlayer->_objectId);
+
+	//// 컨트롤러 빙의
+	//Possess(myPlayer);
+
 	
 	// 틱 가동
 	PrimaryActorTick.bCanEverTick = true;
 	SetActorTickEnabled(true);
 	
 	// 0.2f 주기로 서버로 내 위치 정보를 보내서 동기화
-	// AMyPlayerController::UpdateMyPos
-	GetWorldTimerManager().SetTimer(_timerHandle, this, &AMyPlayerController::SendMyPos, 0.2f, true, 2.0f);
-	
+	GetWorldTimerManager().SetTimer(_timerHandle_myPosSend, this, &AMyPlayerController::SendMyPos, 0.2f, true, 2.0f);
 }
 
 void AMyPlayerController::Tick(float DeltaSeconds)
@@ -98,8 +140,8 @@ void AMyPlayerController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	
 	// 쌓인 패킷 처리
-	if (!_ownerInstance->_packetHandler->_packetQueue.IsEmpty() &&
-		_ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME) {
+	if (!_ownerInstance->_packetHandler->_packetQueue.IsEmpty() /* &&
+		_ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME*/) {
 		
 		if (!_ownerInstance->_packetHandler->IsPacketQueueEmpty()) {
 			TQueue<TFunction<void()>, EQueueMode::Spsc> q;
@@ -113,29 +155,25 @@ void AMyPlayerController::Tick(float DeltaSeconds)
 		}
 	}
 
-	// 이동동기화 : 몬스터도 ai가 아니라 일반 컨트롤러로 처리하는 것이 옳아보임
+	// 이동동기화 
 	// 플레이어
-	for (auto p : _objectManager->_players) {
-		//UCharacterMovementComponent* movementComponent = Cast<UCharacterMovementComponent>(characterBase->GetMovementComponent());
-		
-		PROTOCOL::ObjectInfo* info = _objectManager->_objectInfos[p.Key];
+	for (auto p : _ownerInstance->_objectsManager->_playerObjects) {
+		// 내 캐릭 패스
+		if (p.Key == _ownerInstance->_myCharacterInfo->objectid())
+			continue;
+
+		PROTOCOL::ObjectInfo* info = _ownerInstance->_objectsManager->GetObjectInfoById(p.Key);
 		if (info == nullptr)
 			continue;
-
-		// 내 캐릭 패스
-		if (info->objectid() == _ownerInstance->_myCharacterInfo->objectid())
-			continue;
-
-		AMMOClientCharacter* player = p.Value;
 
 		FVector vel(info->pos().velocityx(), info->pos().velocityy(), info->pos().velocityz());
 		FRotator rot(info->pos().rotationpitch(), info->pos().rotationyaw(), info->pos().rotationroll());
 		float speed = FVector::DotProduct(vel, rot.Vector());
 
 		FVector loc(info->pos().locationx(), info->pos().locationy(), info->pos().locationz());
-		FVector direction = (loc - player->GetActorLocation()).GetSafeNormal();
+		FVector direction = (loc - p.Value->GetActorLocation()).GetSafeNormal();
 
-		player->AddMovementInput(direction * speed);
+		p.Value->AddMovementInput(direction * speed);
 	}
 }
 
@@ -146,60 +184,79 @@ void AMyPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	UE_LOG(LogTemp, Error, TEXT("PC::EndPlay"));
 }
 
-void AMyPlayerController::HandleSpawn(PROTOCOL::S_Spawn& spawnPkt)
+void AMyPlayerController::ShowMouseCursor(bool isShow)
+{
+	if (isShow == true) {
+		SetShowMouseCursor(true);
+		UWidgetBlueprintLibrary::SetInputMode_UIOnly(this);
+		//UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this);
+	}
+	else {
+		// SetShowMouseCursor(false);
+		//UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
+		UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this);
+	}
+}
+
+void AMyPlayerController::SpawnObject(PROTOCOL::S_Spawn& spawnPkt)
 {
 	for (int i = 0; i < spawnPkt.object_size(); i++) {
 		AMyCharacterBase* actor;
 
 		// 본인 스폰
 		if (spawnPkt.object(i).objectid() == _ownerInstance->_myCharacterInfo->objectid()) {
-			_ownerInstance->_hudWidget->UpdateHp();
+			UE_LOG(LogTemp, Error, TEXT("MyCharacter-%d Spawned"), spawnPkt.object(i).objectid());
+
+			Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI)->UpdateHp();
 			return;
 		}
+
 		// 타인 플레이어
 		else if (spawnPkt.object(i).objecttype() == PROTOCOL::GameObjectType::PLAYER) {
+			UE_LOG(LogTemp, Error, TEXT("Player-%d Spawned"), spawnPkt.object(i).objectid());
 			
-			// 오브젝트, 오브젝트 인포 생성
-			actor = _objectManager->Add(spawnPkt.object(i));
-			actor->SetActorActive(true);
+			actor = Cast<AMyCharacterBase>(_ownerInstance->_objectsManager->Add(spawnPkt.object(i)));
+			actor->SpawnDefaultController(); // 일단 플레이어만 스폰 컨트롤러
 		}
 		// 몬스터
 		else if (spawnPkt.object(i).objecttype() == PROTOCOL::GameObjectType::MONSTER) {
-			actor = _objectManager->Add(spawnPkt.object(i));
-			actor->SetActorActive(true);
-			AMyMonster* monster = Cast<AMyMonster>(actor);
-			//UE_LOG(LogTemp, Error, TEXT("radius - %f"), monster->GetSimpleCollisionRadius());
+			UE_LOG(LogTemp, Error, TEXT("Monster-%d Spawned"), spawnPkt.object(i).objectid());
+
+			actor = Cast<AMyCharacterBase>(_ownerInstance->_objectsManager->Add(spawnPkt.object(i)));
+			//actor->SetActorActive(true);
 			
+			//UE_LOG(LogTemp, Error, TEXT("radius - %f"), monster->GetSimpleCollisionRadius());
+			/*
 			if (spawnPkt.object(i).name().compare("Crunch") == 0) {
 				monster->GetMesh()->SetSkeletalMesh(_crunchMesh);
 			}
 			else {
 				monster->GetMesh()->SetSkeletalMesh(_blackCrunchMesh);
-			}
+			}*/
 		}
+
+		// NPC
+		else if (spawnPkt.object(i).objecttype() == PROTOCOL::GameObjectType::NPC) {
+			UE_LOG(LogTemp, Error, TEXT("Npc-%d Spawned"), spawnPkt.object(i).objectid());
+
+			actor = Cast<AMyNpc>(_ownerInstance->_objectsManager->Add(spawnPkt.object(i)));
+		}
+
 		// 그 외
 		else {
 			return;
 		}
 
+		// 현재 이 부분이 문제라고해서 일단 주석처리
+		// 문제가 있긴하네
 		actor->UpdateHP();
 	}
 }
 
-void AMyPlayerController::HandleDespawn(PROTOCOL::S_DeSpawn& despawnPkt)
+void AMyPlayerController::DeSpawnObject(PROTOCOL::S_DeSpawn& despawnPkt)
 {
-	for (int objectId : despawnPkt.objectids()) {
-		// 비활성화
-		AMyCharacterBase* actor = _objectManager->GetObject(objectId);
-		if (IsValid(actor) == false)
-			return;
-
-		//
-		actor->SetActorActive(false);
-		
-		// 디스폰
-		_objectManager->Remove(objectId);
-	}
+	for (int objectId : despawnPkt.objectids()) 
+		_ownerInstance->_objectsManager->Remove(objectId);
 }
 
 void AMyPlayerController::MoveUpdate(PROTOCOL::ObjectInfo info)
@@ -209,56 +266,50 @@ void AMyPlayerController::MoveUpdate(PROTOCOL::ObjectInfo info)
 		return;
 
 	// 타입 확인
-	PROTOCOL::GameObjectType type = _objectManager->GetObjectTypeById(info.objectid());
-
-	// 오브젝트
-	// 오브젝트 인포
-	AActor* object = _objectManager->GetObject(info.objectid());
-	PROTOCOL::ObjectInfo* objectInfo = _objectManager->GetObjectInfo(info.objectid());
-	
-	// 둘 중 하나라도 없으면 
-	if (object == nullptr && objectInfo == nullptr) {
-
-		return;
-	}
-
-	// 서버에서 확정 받은 위치
-	FVector loc(info.pos().locationx(), info.pos().locationy(), info.pos().locationz());
-	FRotator rot(info.pos().rotationpitch(), info.pos().rotationyaw(), info.pos().rotationroll());
-	FVector vel(info.pos().velocityx(), info.pos().velocityy(), info.pos().velocityz());
-
+	PROTOCOL::GameObjectType type = _ownerInstance->_objectsManager->GetTypeById(info.objectid());
 	// 플레이어
 	if (type == PROTOCOL::GameObjectType::PLAYER) {
 
+		auto objectInfoPtr = _ownerInstance->_objectsManager->_objectInfos.Find(info.objectid());
+		if (objectInfoPtr == nullptr)
+			return;
+
 		// 오브젝트 인포 갱신
-		objectInfo->mutable_pos()->set_locationx(loc.X);
-		objectInfo->mutable_pos()->set_locationy(loc.Y);
-		objectInfo->mutable_pos()->set_locationz(loc.Z);
+		objectInfoPtr->mutable_pos()->set_locationx(info.pos().locationx());
+		objectInfoPtr->mutable_pos()->set_locationy(info.pos().locationy());
+		objectInfoPtr->mutable_pos()->set_locationz(info.pos().locationz());
 
-		objectInfo->mutable_pos()->set_rotationpitch(info.pos().rotationpitch());
-		objectInfo->mutable_pos()->set_rotationyaw(info.pos().rotationyaw());
-		objectInfo->mutable_pos()->set_rotationroll(info.pos().rotationroll());
+		objectInfoPtr->mutable_pos()->set_rotationpitch(info.pos().rotationpitch());
+		objectInfoPtr->mutable_pos()->set_rotationyaw(info.pos().rotationyaw());
+		objectInfoPtr->mutable_pos()->set_rotationroll(info.pos().rotationroll());
 
-		objectInfo->mutable_pos()->set_velocityx(info.pos().velocityx());
-		objectInfo->mutable_pos()->set_velocityy(info.pos().velocityy());
-		objectInfo->mutable_pos()->set_velocityz(info.pos().velocityz());
-
-		// 오브젝트 갱신
-		AMMOClientCharacter* player = Cast<AMMOClientCharacter>(object);
+		objectInfoPtr->mutable_pos()->set_velocityx(info.pos().velocityx());
+		objectInfoPtr->mutable_pos()->set_velocityy(info.pos().velocityy());
+		objectInfoPtr->mutable_pos()->set_velocityz(info.pos().velocityz());
 	}
-
 	// 몬스터
 	else if (type == PROTOCOL::GameObjectType::MONSTER) {
+		auto actorPtr = _ownerInstance->_objectsManager->_objects.Find(info.objectid());
+		auto objectInfoPtr = _ownerInstance->_objectsManager->_objectInfos.Find(info.objectid());
+		if (objectInfoPtr == nullptr || actorPtr == nullptr)
+			return;
 
 		// 오브젝트 인포 갱신
-		objectInfo->mutable_pos()->set_locationx(loc.X);
-		objectInfo->mutable_pos()->set_locationy(loc.Y);
+		objectInfoPtr->mutable_pos()->set_locationx(info.pos().locationx());
+		objectInfoPtr->mutable_pos()->set_locationy(info.pos().locationy());
 
 		// 오브젝트 갱신
-		AMyMonster* monster = Cast<AMyMonster>(object);
-		monster->MoveToLocation(loc);
+		AMyMonster* monster = Cast<AMyMonster>((*actorPtr));
+		if (IsValid(monster))
+			monster->MoveToLocation(FVector(info.pos().locationx(), info.pos().locationy(), 0));
+		else
+			UE_LOG(LogTemp, Error, TEXT("AMyPlayerController::MoveUpdate() Error - Invalid Monster"));
 	}
-	
+
+	/*FVector loc(info.pos().locationx(), info.pos().locationy(), info.pos().locationz());
+	FRotator rot(info.pos().rotationpitch(), info.pos().rotationyaw(), info.pos().rotationroll());
+	FVector vel(info.pos().velocityx(), info.pos().velocityy(), info.pos().velocityz());
+	*/
 	/*
 	UCharacterMovementComponent* movementComponent = Cast<UCharacterMovementComponent>(characterBase->GetMovementComponent());
 
@@ -270,85 +321,76 @@ void AMyPlayerController::MoveUpdate(PROTOCOL::ObjectInfo info)
 	*/
 }
 
-void AMyPlayerController::HandleChangeHp(PROTOCOL::S_ChangeHp fromPkt)
+void AMyPlayerController::ChangeHP(PROTOCOL::S_ChangeHp fromPkt)
 {
-	// 
-	PROTOCOL::ObjectInfo* info = _objectManager->GetObjectInfo(fromPkt.object());
+	// 데이터 조회
+	PROTOCOL::ObjectInfo* info = _ownerInstance->_objectsManager->GetObjectInfoById(fromPkt.object());
 	if (info == nullptr)
 		return;
 
-	// Data
+	// C++
 	info->mutable_stat()->set_hp(fromPkt.hp());
 
 	// UI
-	// 내 캐릭
-	if (info->objectid() == _ownerInstance->_myCharacterInfo->objectid()) {
-		_ownerInstance->_hudWidget->UpdateHp();
-	}
+	AMyCharacterBase* object = _ownerInstance->_objectsManager->GetObjectById(fromPkt.object());
+	if (object == nullptr)
+		return;
 
-	// 다른 액터
-	else {
-		AMyCharacterBase* actor = _objectManager->GetObject(fromPkt.object());
-		if (IsValid(actor) == false)
-			return;
-
-		actor->UpdateHP();
+	if (object->_objectId == _ownerInstance->_myCharacterInfo->objectid()) {
+		UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+		if (IsValid(hudUI))
+			hudUI->UpdateHp();
 	}
+	else
+		object->UpdateHP();
 }
 
-void AMyPlayerController::HandleSkill(PROTOCOL::S_Skill& skillPkt)
+void AMyPlayerController::Skill(PROTOCOL::S_Skill& skillPkt)
 {
 	// 공격자
-	AMyCharacterBase* attackerObject = Cast<AMyCharacterBase>(_objectManager->GetObject(skillPkt.attacker()));
-	if (IsValid(attackerObject)) {
-		attackerObject->OnAttack();
+	if (_ownerInstance->_myCharacterInfo->objectid() != skillPkt.attacker()) {
+		auto attackerObjectPtr = _ownerInstance->_objectsManager->GetObjectById(skillPkt.attacker());
+		if (attackerObjectPtr)
+			attackerObjectPtr->OnAttack();
 	}
 
 	// 피해자
 	for (int i = 0; i < skillPkt.victims_size(); i++) {
-		AMyCharacterBase* victimObject = Cast<AMyCharacterBase>(_objectManager->GetObject(skillPkt.victims(i)));
-		if (IsValid(victimObject)) {
-			victimObject->OnAttacked();
-		}
+		auto victimObjectPtr = _ownerInstance->_objectsManager->GetObjectById(skillPkt.victims(i));
+		if (victimObjectPtr) 
+			victimObjectPtr->OnAttacked();
 	}
 }
 
-void AMyPlayerController::HandleDie(PROTOCOL::S_Die fromPkt)
+void AMyPlayerController::Die(PROTOCOL::S_Die fromPkt)
 {
-	UE_LOG(LogTemp, Error, TEXT("Actor-%d Die"), fromPkt.victim());
+	// 해당 오브젝트 조회
+	AMyCharacterBase* object = _ownerInstance->_objectsManager->GetObjectById(fromPkt.victim());
+	if (object == nullptr)
+		return;
 
-	// 사망 처리 (TODO : 시체 처리 및 기타 등등)
-	AMyCharacterBase* object = Cast<AMyCharacterBase>(_objectManager->GetObject(fromPkt.victim()));
-	if (IsValid(object))
-		object->OnDead();
+	// 죽음 처리
+	object->OnDead();
 
-	// 죽은 게 내 캐릭
-	if (fromPkt.victim() == _ownerInstance->_myCharacterInfo->objectid()) {
+	// 그 오브젝트가 혹시 나라면
+	if (object->_objectId == _ownerInstance->_myCharacterInfo->objectid()) {
 		// 입력 해제
 		_ownerInstance->_myCharacter->DisableInput(this);
-		
-		// 위치 동기화 정지
-		_ownerInstance->_isMeAlive = false;
 
 		// 부활 위젯
-		SetShowMouseCursor(true);
-		_ownerInstance->_hudWidget->RespawnUI->SetVisibility(ESlateVisibility::Visible);
-
-		// 본인 제외 액터 제거 - 디스폰 리스트
-		PROTOCOL::S_DeSpawn removeList;
-		for (auto p : _objectManager->_objectInfos) {
-			if (p.Key == _ownerInstance->_myCharacterInfo->objectid())
-				continue;
-
-			removeList.add_objectids(p.Key);
+		UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+		if (IsValid(hudUI)) {
+			hudUI->RespawnUI->SetVisibility(ESlateVisibility::Visible);
+			UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, hudUI->RespawnUI);
 		}
 
-		// 디스폰
-		HandleDespawn(removeList);
+		// 본인 위치 동기화 정지
+		// GetWorld()->GetTimerManager().ClearTimer(_timerHandle_myPosSend);
+		_ownerInstance->_playerState = PROTOCOL::SERVER_STATE_LOBBY;
 	}
 }
 
-void AMyPlayerController::HandleChat(PROTOCOL::S_Chat fromPkt)
+void AMyPlayerController::PlayerChat(PROTOCOL::S_Chat fromPkt)
 {
 	// Chat Format
 	FString chat("[");
@@ -356,12 +398,20 @@ void AMyPlayerController::HandleChat(PROTOCOL::S_Chat fromPkt)
 	chat.Append("] : ");
 	chat.Append(fromPkt.text().c_str());
 
-	_ownerInstance->_hudWidget->AddChatMessage(chat);
+	Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI)->AddChatMessage(chat);
+}
+
+void AMyPlayerController::SystemChat(FString chatMessage)
+{
+	
+	UMyHUDWidget* ui = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+	if (IsValid(ui))
+		ui->AddChatMessage(chatMessage);
 }
 
 void AMyPlayerController::SendMyPos()
 {
-	if (IsValid(_ownerInstance->_myCharacter) && _ownerInstance->_isMeAlive == true) {
+	if (IsValid(_ownerInstance->_myCharacter) && _ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME) {
 		// 현재 렌더링 위치
 		FVector loc = _ownerInstance->_myCharacter->GetActorLocation();
 		FRotator rot = _ownerInstance->_myCharacter->GetActorRotation();
@@ -395,9 +445,8 @@ void AMyPlayerController::MyPlayerAttack(TArray<int32>& playerArray)
 	// 공격자, 사용 스킬, 피해자
 	toPkt.set_attacker(_ownerInstance->_myCharacterInfo->objectid());
 	toPkt.set_skillid(PROTOCOL::SkillType::SKILL_AUTO);
-	for (int objectId : playerArray) {
+	for (int objectId : playerArray) 
 		toPkt.add_victims(objectId);
-	}
 
 	// 패킷 전송
 	auto sendBuffer = _ownerInstance->_packetHandler->MakeSendBuffer(toPkt);
@@ -467,50 +516,65 @@ void AMyPlayerController::MyPlayerChat(FString& chatMessage)
 //}
 
 
-void AMyPlayerController::OpenInventory()
-{
-	if (IsValid(_ownerInstance->_hudWidget) && IsValid(_ownerInstance->_hudWidget->InventoryUI)) {
-		// 인벤이 닫힌 상태
-		if (_ownerInstance->_hudWidget->InventoryUI->GetVisibility() == ESlateVisibility::Hidden) {
-			// 열고, 마우스 커서, UI 컨트롤
-			_ownerInstance->_hudWidget->InventoryUI->SetVisibility(ESlateVisibility::Visible);
-			SetShowMouseCursor(true);
-			UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, _ownerInstance->_hudWidget->InventoryUI);
-		}
 
-		// 인벤이 열린 상태
-		else {
-			// 닫고, 마우스 숨기고, 게임만
-			_ownerInstance->_hudWidget->InventoryUI->SetVisibility(ESlateVisibility::Hidden);
-			SetShowMouseCursor(false);
-			UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
-		}
-	}
-}
-
-void AMyPlayerController::MouseCursorOnOff()
-{
-	// 보임
-	if (bShowMouseCursor == true) {
-
-		SetShowMouseCursor(false);
-		UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
-	}
-
-	// 안 보임
-	else {
-		SetShowMouseCursor(true);
-		UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this);
-	}
-	
-}
+/*-----------------------------------------------------------------------------------
+	액션 인풋, 마우스 커서 등 기타 등등
+-------------------------------------------------------------------------------------*/
 
 void AMyPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
 	InputComponent->BindAction("OpenInventory", IE_Pressed, this, &AMyPlayerController::OpenInventory);
+	InputComponent->BindAction("Interact", IE_Pressed, this, &AMyPlayerController::Interact);
 	InputComponent->BindAction("MouseCursor", IE_Pressed, this, &AMyPlayerController::MouseCursorOnOff);
+	InputComponent->BindAction("OpenQuest", IE_Pressed, this, &AMyPlayerController::OpenQuest);
 }
 
+void AMyPlayerController::Interact()
+{
+	if (IsValid(_ownerInstance->_nowInteractable))
+		_ownerInstance->_nowInteractable->Interact();
+}
+
+void AMyPlayerController::MouseCursorOnOff()
+{
+	// if (bShowMouseCursor == true) ShowMouseCursor(false);
+	// else ShowMouseCursor(true);
+}
+
+void AMyPlayerController::OpenInventory()
+{
+	UMyHUDWidget* ui = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+
+	if (IsValid(ui->InventoryUI) && ui->InventoryUI->GetVisibility() == ESlateVisibility::Hidden) {
+		ui->InventoryUI->SetVisibility(ESlateVisibility::Visible);
+		UWidgetBlueprintLibrary::SetInputMode_UIOnly(this, ui->InventoryUI);
+	}
+	else {
+		ui->InventoryUI->SetVisibility(ESlateVisibility::Hidden);
+		UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this);
+	}
+}
+
+void AMyPlayerController::OpenQuest()
+{
+	// UI를 열때 입력 모드를 UI와 게임 둘 다 가능하게 했다.
+	// 그렇게 하니 UI를 열고 UI에서 입력이 게임에서도 입력공유가 되어버림(Ex.UI 버튼 클릭했는데 캐릭터 공격 입력이 들어감)
+	// 해당 현상을 막기 위해 입력을 UI로만 고정을 했다.
+	// 좋은데 문제가 인풋 액션으로 끄고 싶은데, 게임모드(플레이어컨트롤러)의 인풋액션이 막혀서 UI를 닫을 수가 없음.
+
+	// UI를 열면 UI만 입력 받게하고, UI에서 눌리는 키를 조회해서 원하는 키가 눌릴 시 게임모드(플컨)에서 닫는 함수를 호출
+
+	UMyHUDWidget* ui = Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI);
+
+	if (IsValid(ui->QuestUI) && ui->QuestUI->GetVisibility() == ESlateVisibility::Hidden) {
+		ui->QuestUI->SetVisibility(ESlateVisibility::Visible);
+		UWidgetBlueprintLibrary::SetInputMode_UIOnly(this, ui->QuestUI);
+	}
+	else {
+		ui->QuestUI->SetVisibility(ESlateVisibility::Hidden);
+		UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this);
+	}
+}
 

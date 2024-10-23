@@ -19,7 +19,7 @@ public:
 	virtual void Stop() override;
 	virtual void Exit() override;
 
-	bool Connect();
+	bool Connect(FString ip, int32 port);
 	void Send(TSharedPtr<FSendBuffer> sendBuffer);
 	void Recv();
 public:

@@ -5,110 +5,149 @@
 
 #include"MyPlayerController.h"
 #include"MyGameInstance.h"
+#include"UIManager.h"
 
 /*---------------------------------------------------------------------------------------------
 	실제로 패킷을 처리하는 부분 (전역함수)
 ---------------------------------------------------------------------------------------------*/
 bool Handle_INVALID(UMyGameInstance* instance, uint8* buffer, int len)
 {
-	UE_LOG(LogTemp, Error, TEXT("Handle_INVALID"));
+	UE_LOG(LogTemp, Error, TEXT("Packet Invalid"));
 	return true;
 }
 
 bool Handle_S_LOGIN(UMyGameInstance* instance, PROTOCOL::S_Login fromPkt)
 {
-	instance->HandleLogin(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_Login"));
 
+	instance->Handle_Login(fromPkt);
+	
 	return true;
 }
 
 // 본인(로그인, 종료)
 bool Handle_S_ENTER_ROOM(UMyGameInstance* instance, PROTOCOL::S_Enter_Room fromPkt)
 {
+	UE_LOG(LogTemp, Error, TEXT("Packet S_EnterRoom"));
+
 	if (fromPkt.success()) 
-		instance->HandleEnterRoom(fromPkt.object());
+		instance->Handle_EnterRoom(fromPkt.object());
 
 	return true;
 }
 
 bool Handle_S_LEAVE_ROOM(UMyGameInstance* instance, PROTOCOL::S_Leave_Room fromPkt)
 {
-	// instance->_gameController->HandleDespawn();
+	UE_LOG(LogTemp, Error, TEXT("Packet S_LeaveRoom"));
+
+	instance->Handle_LeaveRoom(fromPkt);
 	
 	return true;
 }
 
 bool Handle_S_SPAWN(UMyGameInstance* instance, PROTOCOL::S_Spawn fromPkt)
 {
-	instance->_gameController->HandleSpawn(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_Spawn"));
+
+	instance->Handle_Spawn(fromPkt);
 
 	return true;
 }
 
 bool Handle_S_DESPAWN(UMyGameInstance* instance, PROTOCOL::S_DeSpawn fromPkt)
 {
-	instance->_gameController->HandleDespawn(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_DeSpawn"));
+	
+	instance->Handle_DeSpawn(fromPkt);
 	
 	return true;
 }
 
 bool Handle_S_ITEMLIST(UMyGameInstance* instance, PROTOCOL::S_ItemList fromPkt)
 {
-	UE_LOG(LogTemp, Error, TEXT("S_ItemList : %d"), fromPkt.items_size());
-	
-	for (int i = 0; i < fromPkt.items_size(); i++) {
-		instance->AddItem(fromPkt.items(i));
-	}
+	UE_LOG(LogTemp, Error, TEXT("Packet S_ItemList - Count:%d"), fromPkt.items_size());
+
+	instance->Handle_ItemList(fromPkt);
 
 	return true;
 }
 
 bool Handle_S_MOVE(UMyGameInstance* instance, PROTOCOL::S_Move fromPkt)
 {
-	instance->_gameController->MoveUpdate(fromPkt.object());
+	instance->_playerController->MoveUpdate(fromPkt.object());
 	
 	return true;
 }
 
 bool Handle_S_SKILL(UMyGameInstance* instance, PROTOCOL::S_Skill fromPkt)
 {
-	instance->_gameController->HandleSkill(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_Skill"));
 
-	return false;
+	instance->Handle_Skill(fromPkt);
+
+	return true;
 }
 
 bool Handle_S_CHAT(UMyGameInstance* instance, PROTOCOL::S_Chat fromPkt)
 {
-	instance->_gameController->HandleChat(fromPkt);
+	instance->Handle_Chat(fromPkt);
 
 	return true;
 }
 
 bool Handle_S_CHANGEHP(UMyGameInstance* instance, PROTOCOL::S_ChangeHp fromPkt)
 {
-	instance->_gameController->HandleChangeHp(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_ChangeHP"));
 
-	return false;
+	instance->Handle_ChangeHp(fromPkt);
+
+	return true;
 }
 
 bool Handle_S_DIE(UMyGameInstance* instance, PROTOCOL::S_Die fromPkt)
 {
-	instance->_gameController->HandleDie(fromPkt);
+	UE_LOG(LogTemp, Error, TEXT("Packet S_Die"));
+
+	instance->Handle_Die(fromPkt);
+	
+	return true;
+}
+
+bool Handle_S_EQUIPITEM(UMyGameInstance* instance, PROTOCOL::S_EquipItem fromPkt)
+{
+	instance->Handle_EquipItem(fromPkt);
 
 	return true;
 }
 
 bool Handle_S_USEITEM(UMyGameInstance* instance, PROTOCOL::S_UseItem fromPkt)
 {
-	instance->HandleUseItem(fromPkt);
+	instance->Handle_UseItem(fromPkt);
 
 	return true;
 }
 
 bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_AddItem fromPkt)
 {
-	for (int i = 0; i < fromPkt.items_size(); i++)
-		instance->AddItem(fromPkt.items(i));
+	UE_LOG(LogTemp, Error, TEXT("Packet S_AddItem"));
+
+	instance->Handle_AddItem(fromPkt);
+
+	return true;
+}
+
+bool Handle_S_UPDATEITEM(UMyGameInstance* instance, PROTOCOL::S_UpdateItem fromPkt)
+{
+	UE_LOG(LogTemp, Error, TEXT("Packet S_UpdateItem"));
+
+	instance->Handle_UpdateItem(fromPkt);
+
+	return true;
+}
+
+bool Handle_S_REMOVEITEM(UMyGameInstance* instance, PROTOCOL::S_RemoveItem fromPkt)
+{
+	instance->Handle_RemoveItem(fromPkt);
 
 	return true;
 }
@@ -116,31 +155,73 @@ bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_AddItem fromPkt)
 // 장비 변경, 레벨업, 
 bool Handle_S_CHANGE_STAT(UMyGameInstance* instance, PROTOCOL::S_ChangeStat fromPkt)
 {
-	instance->HandleChangeStat(fromPkt.object());
+	instance->Handle_ChangeStat(fromPkt.object());
 
 	return true;
 }
 
 bool Handle_S_CREATE_PLAYER(UMyGameInstance* instance, PROTOCOL::S_CreatePlayer fromPkt)
 {
-	instance->HandleCreatePlayer(fromPkt.object());
+	instance->Handle_CreatePlayer(fromPkt.object());
 	
 	return false;
 }
 
 bool Handle_S_ADD_EXP(UMyGameInstance* instance, PROTOCOL::S_AddExp fromPkt)
 {
-	instance->HandleAddExp(fromPkt.exp());
+	instance->Handle_AddExp(fromPkt.exp());
 
 	return true;
 }
 
 bool Handle_S_LEVEL_UP(UMyGameInstance* instance, PROTOCOL::S_LevelUp fromPkt)
 {
-	instance->HandleChangeStat(fromPkt.info());
+	instance->Handle_ChangeStat(fromPkt.info());
 	
 	// TODO : 레벨업 이펙트
-	instance->_hudWidget->PlayLevelUpWidgetAnim();
+	Cast<UMyHUDWidget>(instance->_uiManager->_mainUI)->PlayLevelUpWidgetAnim();
+
+	return true;
+}
+
+bool Handle_S_ADD_QUEST(UMyGameInstance* instance, PROTOCOL::S_AddQuest fromPkt)
+{
+	instance->Handle_AddQuest(fromPkt.quest());
+
+	return true;
+}
+
+bool Handle_S_QUESTLIST(UMyGameInstance* instance, PROTOCOL::S_QuestList fromPkt)
+{
+	for (int i = 0; i < fromPkt.quests_size(); i++) 
+		instance->Handle_AddQuest(fromPkt.quests(i));
+
+	return true;
+}
+
+bool Handle_S_REMOVE_QUEST(UMyGameInstance* instance, PROTOCOL::S_RemoveQuest fromPkt)
+{
+	UE_LOG(LogTemp, Error, TEXT("Packet S_RemoveQuest"));
+
+	instance->Handle_RemoveQuest(fromPkt);
+
+	return true;
+}
+
+bool Handle_S_COMPLETE_QUEST(UMyGameInstance* instance, PROTOCOL::S_CompleteQuest fromPkt)
+{
+	UE_LOG(LogTemp, Error, TEXT("Packet S_CompleteQuest"));
+
+	instance->Handle_CompleteQuest(fromPkt);
+
+	return true;
+}
+
+bool Handle_S_UPDATE_QUEST(UMyGameInstance* instance, PROTOCOL::S_UpdateQuest fromPkt)
+{
+	UE_LOG(LogTemp, Error, TEXT("Packet S_UpdateQuest"));
+
+	instance->Handle_UpdateQuest(fromPkt);
 
 	return true;
 }
@@ -215,11 +296,20 @@ void FServerPacketHandler::Init()
 	_packetHandleFuncs[PROTOCOL::MsgId::S_DIE] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
 		return HandlePacket<PROTOCOL::S_Die>(Handle_S_DIE, instance, buffer, len);
 	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_EQUIPITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_EquipItem>(Handle_S_EQUIPITEM, instance, buffer, len);
+	};
 	_packetHandleFuncs[PROTOCOL::MsgId::S_USEITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
 		return HandlePacket<PROTOCOL::S_UseItem>(Handle_S_USEITEM, instance, buffer, len);
 	};
 	_packetHandleFuncs[PROTOCOL::MsgId::S_ADD_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
 		return HandlePacket<PROTOCOL::S_AddItem>(Handle_S_ADDITEM, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_UPDATE_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_UpdateItem>(Handle_S_UPDATEITEM, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_REMOVE_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_RemoveItem>(Handle_S_REMOVEITEM, instance, buffer, len);
 	};
 	_packetHandleFuncs[PROTOCOL::MsgId::S_CHANGE_STAT] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
 		return HandlePacket<PROTOCOL::S_ChangeStat>(Handle_S_CHANGE_STAT, instance, buffer, len);
@@ -232,6 +322,21 @@ void FServerPacketHandler::Init()
 	};
 	_packetHandleFuncs[PROTOCOL::MsgId::S_LEVEL_UP] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
 		return HandlePacket<PROTOCOL::S_LevelUp>(Handle_S_LEVEL_UP, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_ADD_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_AddQuest>(Handle_S_ADD_QUEST, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_QUEST_LIST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_QuestList>(Handle_S_QUESTLIST, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_REMOVE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_RemoveQuest>(Handle_S_REMOVE_QUEST, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_COMPLETE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_CompleteQuest>(Handle_S_COMPLETE_QUEST, instance, buffer, len);
+	};
+	_packetHandleFuncs[PROTOCOL::MsgId::S_UPDATE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_UpdateQuest>(Handle_S_UPDATE_QUEST, instance, buffer, len);
 	};
 }
 
@@ -283,6 +388,11 @@ TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Chat to
 	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_CHAT);
 }
 
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_EquipItem toPkt)
+{
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_EQUIPITEM);
+}
+
 TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UseItem toPkt)
 {
 	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_USEITEM);
@@ -291,4 +401,24 @@ TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UseItem
 TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CreatePlayer toPkt)
 {
 	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_CREATE_PLAYER);
+}
+
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_AddQuest toPkt)
+{
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_ADD_QUEST);
+}
+
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_RemoveQuest toPkt)
+{
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_REMOVE_QUEST);
+}
+
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CompleteQuest toPkt)
+{
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_COMPLETE_QUEST);
+}
+
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UpdateQuest toPkt)
+{
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_UPDATE_QUEST);
 }

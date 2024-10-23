@@ -2,8 +2,13 @@
 
 
 #include "GameStruct.h"
-#include"DataManager.h"
+#include"../DataManager.h"
+#include"../MyGameInstance.h"
 
+/*
+	참고 : 
+	UObject 객체들의 override는 이런식으로 한다고 알고있음..
+*/
 
 void UItem::Init(UMyGameInstance* instance, int32 templateId)
 {

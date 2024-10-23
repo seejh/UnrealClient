@@ -2,116 +2,167 @@
 
 
 #include "InvenSlotWidget.h"
+#include<Components/Image.h>
+#include<Components/TextBlock.h>
+#include<Components/Button.h>
+
+#include"InventoryWidget.h"
 #include"SlotTooltipWidget.h"
 #include"../Data/GameStruct.h"
 #include"../ServerPacketHandler.h"
 #include"../NetSession.h"
+#include"../MyGameInstance.h"
+#include"../UIManager.h"
 
 FString UInvenSlotWidget::NoneThumbnailPath = "/Game/Icons/Slot_EmptyWhite";
 
-void UInvenSlotWidget::Init(int32 SlotIndex)
+void UInvenSlotWidget::Init(UInventoryWidget* ownerInvenWidget, int32 SlotIndex)
 {
+	// 인벤토리 위젯 참조
+	_ownerWidget = ownerInvenWidget;
+
 	// 슬롯 인덱스 설정
 	slotIndex = SlotIndex;
 
-	// 툴팁 위젯 생성
+	// 툴팁 위젯 생성 - UPROPERTY임 이거 만들필요가 없지않나 -> 체크
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	slotTooltipWidget = Cast<USlotTooltipWidget>(CreateWidget(GetWorld(), instance->SlotTooltipWidgetClass));
-
-	// 섬네일 기본
-	slotThumbnail->SetBrushFromTexture(Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *NoneThumbnailPath)));
+	slotTooltipUI = Cast<USlotTooltipWidget>(CreateWidget(GetWorld(), instance->_uiManager->SlotTooltipClass));
+		
+	// 빈슬롯 텍스쳐 로드, 슬롯 섬네일 빈슬롯으로 설정
+	emptySlotTexture = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *NoneThumbnailPath));
+	slotThumbnail->SetBrushFromTexture(emptySlotTexture);
 }
 
-void UInvenSlotWidget::SetItem(UItem* Item)
+void UInvenSlotWidget::SetItem()
 {
-	// 아이템 설정
-	item = Item;
+	// 아이템 설정 (GameInstance에 C++ 인벤토리에서 참조)
+	auto itemPtr = Cast<UMyGameInstance>(GetGameInstance())->inventory.Find(slotIndex);
+	if (itemPtr == nullptr)
+		item = nullptr;
+	else
+		item = (*itemPtr);
 
 	// 위젯 업데이트
-	UpdateWidget();
+	UpdateUI();
 }
 
-void UInvenSlotWidget::UpdateWidget()
+void UInvenSlotWidget::SetRequestTimer(bool flag)
 {
-	// 1. 아이템이 없을 때
+	// 패킷 요청 상태
+	if (flag == true) {
+		// 패킷 요청 상태 전환
+		isRequested = true;
+
+		// 상태 해제 예약
+		GetWorld()->GetTimerManager().SetTimer(requestTimer, FTimerDelegate::CreateLambda(
+			[this]() {isRequested = false; }
+		), 5.0f, false);
+	}
+	// 패킷 요청 상태 아님
+	else {
+		// 패킷 요청 상태 아님
+		isRequested = false;
+
+		// 상태 해제 예약 취소
+		GetWorld()->GetTimerManager().ClearTimer(requestTimer);
+	}
+}
+
+void UInvenSlotWidget::SetUseTimer()
+{
+	// 아이템 사용 쿨타임 적용
+	isUseTime = false;
+
+	// 아이템 사용 쿨타임 해제 예약
+	GetWorld()->GetTimerManager().SetTimer(useTimer, FTimerDelegate::CreateLambda(
+		[this]() {isUseTime = true; }
+	), 2.0f, false);
+}
+
+void UInvenSlotWidget::UpdateUI()
+{
+	// 아이템 없음 (삭제되거나, 애초에 없는 경우)
 	if (IsValid(item) == false || IsValid(item->itemData) == false) {
 		// 섬네일
-		slotThumbnail->SetBrushFromTexture(Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *NoneThumbnailPath)));
+		slotThumbnail->SetBrushFromTexture(emptySlotTexture);
 
 		// 상태
 		slotStatus->SetText(FText::FromString(""));
 
-		// 툴팁 바인드 해제
+		// 툴팁
 		tooltipBtn->SetToolTip(nullptr);
-
-		return;
 	}
 
-	// 2. 아이템이 있을 때
-	// 섬네일
-	slotThumbnail->SetBrushFromTexture(item->itemData->thumbnail);
-	
-	// 상태 - 아이템 타입에 따라
-	// NONE
-	if (item->itemData->itemType == EItemType::ITEM_TYPE_NONE) {
-		return;
-	}
-	
-	// 소비류
-	else if (item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
-		slotStatus->SetText(FText::FromString(FString::FromInt(item->itemDB.count)));
-	}
-	
-	// 장비류(무기, 방어구)
-	else if (item->itemData->itemType == EItemType::ITEM_TYPE_WEAPON ||
-		item->itemData->itemType == EItemType::ITEM_TYPE_ARMOR) {
+	// 아이템 있음
+	else {
+		// 섬네일
+		slotThumbnail->SetBrushFromTexture(item->itemData->thumbnail);
 
-		if (item->itemDB.equipped) {
-			slotStatus->SetText(FText::FromString("E"));
-		}
+		// 상태 - 소비, 장비
+		// 소비류
+		if (item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE)
+			slotStatus->SetText(FText::FromString(FString::FromInt(item->itemDB.count)));
+		
+		// 장비류
 		else {
-			slotStatus->SetText(FText::FromString(""));
+			// 상태
+			if (item->itemDB.equipped == true)
+				slotStatus->SetText(FText::FromString("E"));
+			else
+				slotStatus->SetText(FText::FromString(""));
 		}
+
+		// 툴팁
+		slotTooltipUI->UpdateToolTip(item);
+		tooltipBtn->SetToolTip(slotTooltipUI);
 	}
 
-	// 툴팁 업데이트
-	slotTooltipWidget->UpdateToolTip(item);
-
-	// 툴팁 바인드
-	tooltipBtn->SetToolTip(slotTooltipWidget);
+	// 상위UI에서 공격력, 방어력 갱신
+	_ownerWidget->UpdateArmorText();
+	_ownerWidget->UpdateDamageText();
 }
 
 void UInvenSlotWidget::RequestUseItem()
 {
-	// 아이템 없으면 패스
+	// 아이템이 없으면 취소
 	if (IsValid(item) == false || IsValid(item->itemData) == false)
 		return;
 
-	// 아이템 사용 요청이 진행 중이면
-	if (isRequested == true)
-		return;
+	// 아이템 사용 요청이 진행 중이면 취소
+	// if (isRequested == true) return;
 
-	// 사용쿨 - 수정필요
-	if (isUseTimeOn == false)
-		return;
+	// 요청 쿨 적용
+	// SetRequestTimer(true);
+	
+	// 소모품이면 사용
+	if (item->itemData->itemType == EItemType::ITEM_TYPE_CONSUMABLE) {
+		// 사용쿨이 되지 않았으면 취소 (현재 하드코딩)
+		// if (isUseTime == false) return;
 
-	// 아이템 사용 요청 플래그 설정
-	isRequested = true;
-	isUseTimeOn = false;
+		// 아이템 사용 쿨타임 적용
+		// SetUseTimer();
 
-	GetWorld()->GetTimerManager().SetTimer(useTimer, FTimerDelegate::CreateLambda(
-		[this]() {
-			isUseTimeOn = true;
-		}
-	), 1.5f, false);
+		// 사용 패킷
+		PROTOCOL::C_UseItem toPkt;
+		toPkt.set_slot(item->itemDB.slot);
+		toPkt.set_use(true);
 
-	//
-	PROTOCOL::C_UseItem toPkt;
-	toPkt.set_itemdbid(item->itemDB.itemDbId);
-	toPkt.set_use(!item->itemDB.equipped);
+		// 요청
+		UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
+		auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
+		instance->_netSession->Send(sendBuffer);
+	}
+	
+	// 장비품이면 장착/해제
+	else {
+		// 장착 패킷
+		PROTOCOL::C_EquipItem toPkt;
+		toPkt.set_slot(item->itemDB.slot);
+		toPkt.set_equip(!item->itemDB.equipped);
 
-	// 전송
-	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
-	instance->_netSession->Send(sendBuffer);
+		// 요청
+		UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
+		auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
+		instance->_netSession->Send(sendBuffer);
+	}
 }

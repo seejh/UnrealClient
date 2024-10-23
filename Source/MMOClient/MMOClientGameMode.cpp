@@ -4,6 +4,8 @@
 #include "GameObject/MMOClientCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/DefaultPawn.h"
+#include"MyPlayerController.h"
+
 AMMOClientGameMode::AMMOClientGameMode()
 {
 	// set default pawn class to our Blueprinted character
@@ -13,4 +15,6 @@ AMMOClientGameMode::AMMOClientGameMode()
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}*/
 	//DefaultPawnClass = ADefaultPawn::StaticClass();
+
+	//PlayerControllerClass = AMyPlayerController::StaticClass();
 }

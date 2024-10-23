@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include"Data/GameStruct.h"
+
 #include "LoginController.generated.h"
 
 
 class UMyGameInstance;
-
-
 UCLASS()
 class MMOCLIENT_API ALoginController : public APlayerController
 {

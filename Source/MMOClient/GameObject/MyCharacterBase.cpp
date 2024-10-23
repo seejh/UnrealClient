@@ -4,13 +4,13 @@
 #include "MyCharacterBase.h"
 #include"../MyGameInstance.h"
 #include"../MyPlayerController.h"
-#include"ObjectManager.h"
+#include"../ObjectManager.h"
 
 // Sets default values
 AMyCharacterBase::AMyCharacterBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	//PrimaryActorTick.bCanEverTick = true;
 }
 
 // Called when the game starts or when spawned
@@ -85,7 +85,7 @@ void AMyCharacterBase::SetActorActive(bool flag)
 // Called every frame
 void AMyCharacterBase::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
+	//Super::Tick(DeltaTime);
 
 }
 

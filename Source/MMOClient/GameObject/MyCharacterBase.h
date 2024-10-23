@@ -49,10 +49,6 @@ public:
 public:
 	FTimerHandle _timerHandle;
 
-	/*int32 objectId;
-
-	float _hp;
-	float _maxHp;*/
-
-	PROTOCOL::ObjectInfo* info = nullptr;
+	int32 _objectId;
+	// PROTOCOL::ObjectInfo info;
 };

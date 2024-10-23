@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 
-#include<Components/WidgetComponent.h>
+
 #include"Projectile.h"
 #include"MyCharacterBase.h"
 
