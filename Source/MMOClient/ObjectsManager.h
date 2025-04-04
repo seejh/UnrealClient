@@ -36,7 +36,7 @@ public:
 public:
 	TMap<int, PROTOCOL::ObjectInfo> _objectInfos;
 	TMap<int, AMyCharacterBase*> _objects;
-	TMap<int, AMMOClientCharacter*> _playerObjects;
+	//TMap<int, AMMOClientCharacter*> _playerObjects;
 	
 
 	UMyGameInstance* _ownerInstance;
@@ -46,6 +46,7 @@ public:
 	TSubclassOf<UObject> _bpMonster;
 	TSubclassOf<UObject> _bpBlackCrunch;
 	TSubclassOf<UObject> _bpNpc;
+	TSubclassOf<UObject> _bpBotPlayer;
 
 	// 
 	USkeletalMesh* _crunchMesh;

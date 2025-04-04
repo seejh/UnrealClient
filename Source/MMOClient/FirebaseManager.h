@@ -2,17 +2,11 @@
 
 #pragma once
 
-#include<firebase/app.h>
-#include<firebase/auth.h>
-
 #include "CoreMinimal.h"
 #include "FirebaseManager.generated.h"
 
+namespace firebase { class App; }
 
-/*
-	future가 옳다고 가정하고 작성
-	다른 방안 : FTimerHandle
-*/
 class UMyGameInstance;
 UCLASS()
 class MMOCLIENT_API UFirebaseManager : public UObject

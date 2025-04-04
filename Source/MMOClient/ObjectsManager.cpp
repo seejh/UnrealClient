@@ -7,6 +7,7 @@
 #include"GameObject/MMOClientCharacter.h"
 #include"GameObject/MyMonster.h"
 #include"GameObject/MyNpc.h"
+#include"GameObject/BotPlayer.h"
 
 UObjectsManager::UObjectsManager()
 {
@@ -46,7 +47,14 @@ UObjectsManager::UObjectsManager()
 	UBlueprint* bp4 = Cast<UBlueprint>(cls4);
 	_bpNpc = (UClass*)bp4->GeneratedClass;
 
-
+	// 봇플레이어
+	UObject* cls5 = StaticLoadObject(UObject::StaticClass(), nullptr, TEXT("Blueprint'/Game/BP_BotPlayer.BP_BotPlayer'"));
+	if (IsValid(cls5) == false) {
+		UE_LOG(LogTemp, Error, TEXT("BP_BotPlayer Load Failed"));
+		return;
+	}
+	UBlueprint* bp5 = Cast<UBlueprint>(cls5);
+	_bpBotPlayer = (UClass*)bp5->GeneratedClass;
 
 	// 스켈레탈 메시
 	ConstructorHelpers::FObjectFinder<USkeletalMesh> BlackCrunchAsset(TEXT("/Game/ParagonCrunch/Characters/Heroes/Crunch/Skins/Tier_3/BlackSite/Meshes/Crunch_Black_Site"));
@@ -59,26 +67,25 @@ UObjectsManager::UObjectsManager()
 
 AMyCharacterBase* UObjectsManager::Add(PROTOCOL::ObjectInfo info)
 {
-	FVector loc(info.pos().locationx(), info.pos().locationy(), info.pos().locationz());
-	FRotator rot(info.pos().rotationpitch(), info.pos().rotationyaw(), info.pos().rotationroll());
+	FVector loc = _ownerInstance->PFVtoFVector(info.pos().location());
+	FRotator rot = _ownerInstance->PFVtoFRoator(info.pos().rotation());
+
 	FActorSpawnParameters param;
 	param.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	// 플레이어
 	if (info.objecttype() == PROTOCOL::GameObjectType::PLAYER) {
-		AMMOClientCharacter* player = _ownerInstance->GetWorld()->SpawnActor<AMMOClientCharacter>(_bpPlayer, loc, rot, param);
+		ABotPlayer* player = _ownerInstance->GetWorld()->SpawnActor<ABotPlayer>(_bpBotPlayer, loc, rot, param);
 		player->_objectId = info.objectid();
-
-		_playerObjects.Add(info.objectid(), player);
+		_objects.Add(info.objectid(), player);
 		_objectInfos.Add(info.objectid(), info);
-
-		player->SpawnDefaultController();
-
 		return player;
 	}
 
 	// 몬스터
 	else if (info.objecttype() == PROTOCOL::GameObjectType::MONSTER) {
+		UE_LOG(LogTemp, Error, TEXT("MONSTER ADD"));
+
 		AMyMonster* monster;
 
 		if (info.name().compare("Crunch") == 0) {
@@ -101,7 +108,7 @@ AMyCharacterBase* UObjectsManager::Add(PROTOCOL::ObjectInfo info)
 	// NPC
 	else if (info.objecttype() == PROTOCOL::GameObjectType::NPC) {
 		AMyNpc* npc;
-
+		
 		npc = _ownerInstance->GetWorld()->SpawnActor<AMyNpc>(_bpNpc, loc, rot, param);
 		npc->_objectId = info.objectid();
 
@@ -120,13 +127,13 @@ void UObjectsManager::Remove(int objectId)
 	
 	case PROTOCOL::GameObjectType::PLAYER:
 	{
-		auto playerObjectPtr = _playerObjects.Find(objectId);
+		auto playerObjectPtr = _objects.Find(objectId);
 		if (playerObjectPtr) {
 			if ((*playerObjectPtr)->Destroy()) {
 				UE_LOG(LogTemp, Error, TEXT("UObjectManager::Remove() - PLAYER-%d REMOVED SUCCEED"), objectId);
 
 				//
-				_playerObjects.Remove(objectId);
+				_objects.Remove(objectId);
 				_objectInfos.Remove(objectId);
 			}
 			else {
@@ -208,7 +215,7 @@ AMyCharacterBase* UObjectsManager::GetObjectById(int objectId)
 	switch (GetTypeById(objectId)) {
 	case PROTOCOL::GameObjectType::PLAYER:
 	{
-		auto objectPtr = _playerObjects.Find(objectId);
+		auto objectPtr = _objects.Find(objectId);
 		if (objectPtr == nullptr)
 			return nullptr;
 
@@ -252,9 +259,4 @@ void UObjectsManager::Clear()
 	for (auto p : _objects) 
 		p.Value->Destroy();
 	_objects.Empty();
-
-	// 플레이어 오브젝트 (캐릭터, 데이터 제거)
-	for (auto p : _playerObjects)
-		p.Value->Destroy();
-	_playerObjects.Empty();
 }

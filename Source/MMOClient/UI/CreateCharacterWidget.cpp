@@ -25,7 +25,7 @@ void UCreateCharacterWidget::OnCreateBtnClicked()
 	FString str = Name->GetText().ToString();
 
 	// 패킷 생성
-	PROTOCOL::C_CreatePlayer toPkt;
+	PROTOCOL::C_CREATE_PLAYER toPkt;
 	toPkt.set_name(TCHAR_TO_ANSI(*str));
 	
 	// 비활성화

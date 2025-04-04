@@ -4,7 +4,6 @@
 #include "MyCharacterBase.h"
 #include"../MyGameInstance.h"
 #include"../MyPlayerController.h"
-#include"../ObjectManager.h"
 
 // Sets default values
 AMyCharacterBase::AMyCharacterBase()
@@ -43,7 +42,6 @@ void AMyCharacterBase::OnDead()
 
 void AMyCharacterBase::UpdateHP()
 {
-
 }
 
 void AMyCharacterBase::SetActorActive(bool flag)

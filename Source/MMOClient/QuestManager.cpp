@@ -42,8 +42,9 @@ void UQuestManager::AddQuest(PROTOCOL::QuestInfo questInfo)
 	// 추가
 	_quests.Add(quest->_questInfo.templateId, quest);
 
-	// UI 추가 (다만 로그인할 때가 아니라면)
-	if (_ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME) 
+	// UI 추가 (첫접속 빼고, 인게임중이나 다시 로그인할 때)
+	if (_ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_GAME ||
+		_ownerInstance->_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_LOBBY)
 		Cast<UMyHUDWidget>(_ownerInstance->_uiManager->_mainUI)->QuestUI->AddQuestUI(quest);
 }
 
@@ -79,7 +80,7 @@ void UQuestManager::InteractUpdateReq(int objectId, int objectiveTemplateId)
 		p.Value->_questInfo.progress += 1;
 
 		// 패킷
-		PROTOCOL::C_UpdateQuest toPkt;
+		PROTOCOL::C_UPDATE_QUEST toPkt;
 		toPkt.mutable_questinfo()->set_questdbid(p.Value->_questInfo.questDbId);
 		toPkt.mutable_questinfo()->set_templateid(p.Value->_questInfo.templateId);
 		toPkt.mutable_questinfo()->set_playerdbid(p.Value->_questInfo.playerDbId);

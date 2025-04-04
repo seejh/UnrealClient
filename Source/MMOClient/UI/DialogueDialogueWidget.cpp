@@ -69,7 +69,7 @@ void UDialogueDialogueWidget::OnAcceptBtnClicked()
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
 
 	// 패킷 전송
-	PROTOCOL::C_AddQuest toPkt;
+	PROTOCOL::C_ADD_QUEST toPkt;
 	toPkt.mutable_quest()->set_templateid(questData->id);
 
 	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);

@@ -48,6 +48,10 @@
 		{
 			"Name": "EOSShared",
 			"Enabled": true
+		},
+		{
+			"Name": "ExportNav",
+			"Enabled": false
 		}
 	]
 }

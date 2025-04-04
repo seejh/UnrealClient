@@ -20,7 +20,7 @@ void UServerListSlotWidget::ConnectToGameServer()
 	// 해당 서버의 ip와 port로 소켓 접속
 	if (instance->_netSession->Connect(_serverInfo.IpAddress, _serverInfo.Port)) {
 		// 소켓 연결 성공, C_Login 패킷 전송(토큰)
-		PROTOCOL::C_Login loginPkt;
+		PROTOCOL::C_LOGIN loginPkt;
 		loginPkt.set_tokenstring(TCHAR_TO_ANSI(*(instance->_token)));
 
 		auto sendBuffer = instance->_packetHandler->MakeSendBuffer(loginPkt);

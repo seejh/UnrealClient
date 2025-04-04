@@ -21,7 +21,6 @@
 #include"ServerPacketHandler.h"
 #include"DataManager.h"
 #include"Data/GameStruct.h"
-#include"ObjectManager.h"
 #include"WebManager.h"
 #include"UIManager.h"
 #include"ObjectsManager.h"
@@ -41,6 +40,9 @@ UMyGameInstance::UMyGameInstance()
 void UMyGameInstance::Init()
 {
     Super::Init();
+
+    // false = 개발중(웹서버X)
+    _isRelease = true;
 
     // UI 매니저
     _uiManager = NewObject<UUIManager>();
@@ -174,14 +176,15 @@ void UMyGameInstance::AddItem(PROTOCOL::ItemInfo itemInfo)
 
         _playerController->SystemChat(str);
     }
+    else if (_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_LOBBY) {
+        UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
+        if (IsValid(hudUI))
+            hudUI->InventoryUI->SetSlot(item->itemDB.slot);
+    }
 }
 
 void UMyGameInstance::UpdateItem(PROTOCOL::ItemInfo itemInfo)
 {
-    // 클라에서 로그를 찍기가 애매함
-    // 새로운 소비 아이템을 얻어서 업데이트 패킷을 보내줬는데 받는입장(클라)에서는 그것이 아이템 획득인지 모름
-    // 개수 비교로 알 수는 있으나, 애초에 인게임 로그를 이따구로 찍으면 안될듯
-
     // C++ 인벤에서 해당 아이템 찾음
     auto itemPtr = inventory.Find(itemInfo.slot());
     if (itemPtr == nullptr)
@@ -199,7 +202,7 @@ void UMyGameInstance::UpdateItem(PROTOCOL::ItemInfo itemInfo)
     }
 }
 
-void UMyGameInstance::Handle_Login(PROTOCOL::S_Login fromPkt) {
+void UMyGameInstance::Handle_Login(PROTOCOL::S_LOGIN fromPkt) {
     for (int i = 0; i < fromPkt.objectinfos_size(); i++) 
         _myCharacterList.Add(fromPkt.objectinfos(i));
 
@@ -214,100 +217,70 @@ void UMyGameInstance::Handle_CreateAccount(FCreateAccountPacketRes pkt)
 void UMyGameInstance::Handle_EnterRoom(PROTOCOL::ObjectInfo info)
 {
     // 현재 상태 체크 : 1.로비에서 첫 진입 / 2.월드에서 재 진입
-    // 현 로비, 첫 진입
+    
+    // 현재 로비 (처음스폰)
     if (_playerState == PROTOCOL::PlayerServerState::SERVER_STATE_LOGIN) {
         
         // 현재 플레이어 정보 설정
-        // 수정필요 - 인스턴스에서 _myCharacterInfo는 오브젝트풀에 들어가 있는 본인 인포 주소를 조회해서 사용
-        // 다만 이 시점에서는 오브젝트풀에서 해당 인스턴스 자체가 만들어지기 전이라
-        // 아래 코드에서 메모리 하나 만들고 버리는 식으로 
         _myCharacterInfo = new PROTOCOL::ObjectInfo();
         _myCharacterInfo->CopyFrom(info);
 
-        // 로비위젯 제거, 오픈 레벨 전에 모든 위젯을 닫아야 한다.
+        // 오픈되어 있는 기존 위젯들 제거 (여기서 많이 튕겼었다. 오픈 레벨을 할 때 기존 레벨의 UI들을 모두 닫아야 된다라고 들었으나 실제 효과를 못ㅂ)
         _loginController->SetActorTickEnabled(false);
         _loginController->Destroy();
         _loginController = nullptr;
         _uiManager->_mainUI->RemoveFromParent();
 
-        // 오픈레벨 (문제많음, 다음 레벨 넘어가면 자꾸 팅김)
+        // 오픈레벨
         UGameplayStatics::OpenLevel(GetWorld(), *FString(L"/Game/NewMap"), false, "");
     }
 
-    // 현 월드, 재 진입
+    // 현재 월드 (리스폰)
     else {
         // 현재 플레이어 정보 설정
-        UE_LOG(LogTemp, Error, TEXT("1"));
+        UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_EnterRoom() ReSpawn"));
 
-        // 수정 필요 - 여기도 마찬가지로 위와 같은 이유
+        // 
         _myCharacterInfo = new PROTOCOL::ObjectInfo();
         _myCharacterInfo->CopyFrom(info);
         
-        if (_myCharacterInfo == nullptr) {
-            UE_LOG(LogTemp, Error, TEXT("mycharacterinfo nullptr"));
-        }
-        else {
-            UE_LOG(LogTemp, Error, TEXT("mycharacterinfo not nullptr"));
-        }
-
-        // HUD UI 재기동
-        /*UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
-        if (IsValid(hudUI)) 
-            hudUI->Init(false);*/
-
         // 플레이어 컨트롤러 재기동
         _playerController->Init(false);
-
-        // UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
-        // hudUI->UpdateHp();
-
-        // _myCharacter->SetActorLocation(FVector(info.pos().locationx(), info.pos().locationy(), info.pos().locationz()));
-
-        // 리스폰 위젯 숨김, 다시 활성화, 마우스 제거
-        // hudUI->RespawnUI->SetVisibility(ESlateVisibility::Hidden);
-        // hudUI->RespawnUI->RespawnBtn->SetIsEnabled(true);
-        // _playerController->SetShowMouseCursor(false);
-        
-        // 위치 동기화 활성화
-        // _isMeAlive = true;
-        
-        // 캐릭터 입력 활성화
-        // _myCharacter->EnableInput(_playerController);
     }
 }
 
-void UMyGameInstance::Handle_LeaveRoom(PROTOCOL::S_Leave_Room fromPkt)
+void UMyGameInstance::Handle_LeaveRoom(PROTOCOL::S_LEAVE_ROOM fromPkt)
 {
-    // 아이템리스트, 퀘스트리스트 정리, UI 정리, 게임 오브젝트 정리
+    // UI 및 데이터 정리 (아이템, 퀘스트, 스텟), 게임 오브젝트 정리
 
-    // 아이템 리스트 정리
-    //inventory.Empty();
-
-    // 퀘스트리스트
-    //_questManager->Clear();
-
-    // UI 정리
     UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
-    if (IsValid(hudUI)) {
-        //hudUI->Clear();
-        
-        // 오브젝트 정리하기 전에 재입장 요청하기 위해 내 캐릭터 이름
-        hudUI->RespawnUI->name = _myCharacterInfo->name();
+    if (IsValid(hudUI) == false) {
+        UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_LeaveRoom() Error - Invalid HudUI"));
+        return;
     }
+
+    // 아이템 정리 (c++ 데이터)
+    inventory.Empty();
+    
+    // 퀘스트 정리 (c++ 데이터)
+    _questManager->Clear();
+
+    // UI 초기화
+    hudUI->Clear();
     
     // 게임 오브젝트 정리
     _objectsManager->Clear();
 }
 
-void UMyGameInstance::Handle_ItemList(PROTOCOL::S_ItemList fromPkt)
+void UMyGameInstance::Handle_ItemList(PROTOCOL::S_ITEMLIST fromPkt)
 {
     for (int i = 0; i < fromPkt.items_size(); i++) 
         AddItem(fromPkt.items(i));
 }
 
-void UMyGameInstance::Handle_UseItem(PROTOCOL::S_UseItem fromPkt)
+void UMyGameInstance::Handle_UseItem(PROTOCOL::S_USE_ITEM fromPkt)
 {
-    // 소모품 아이템을 사용했다 -> 수량 감소만, 효과는 다른 패킷으로 온다.(업데이트로 처리하는 것도..)
+    // 소모품 아이템을 사용했다 -> 수량 감소만, 효과는 다른 패킷
 
     // 아이템 탐색
     UItem* item = inventory.FindRef(fromPkt.item().slot());
@@ -323,7 +296,7 @@ void UMyGameInstance::Handle_UseItem(PROTOCOL::S_UseItem fromPkt)
         hudWidget->InventoryUI->UpdateSlot(item->itemDB.slot);
 }
 
-void UMyGameInstance::Handle_EquipItem(PROTOCOL::S_EquipItem fromPkt)
+void UMyGameInstance::Handle_EquipItem(PROTOCOL::S_EQUIP_ITEM fromPkt)
 {
     // 아이템 탐색
     UItem* item = inventory.FindRef(fromPkt.slot());
@@ -337,9 +310,6 @@ void UMyGameInstance::Handle_EquipItem(PROTOCOL::S_EquipItem fromPkt)
     UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
     if (IsValid(hudUI)) {
         hudUI->InventoryUI->UpdateSlot(item->itemDB.slot);
-
-        // 이거 수정해야된다.
-        // hudUI->InventoryUI->GetSlotAt(item->itemDB.slot)->SetRequestTimer(false);
     }
 }
 
@@ -353,7 +323,7 @@ void UMyGameInstance::Handle_EquipItem(PROTOCOL::S_EquipItem fromPkt)
     TArray에서 TMap으로 변경
     언리얼의 TArray는 c++의 배열과 비어있는 인덱스로 접근시 문제가 생김
 */
-void UMyGameInstance::Handle_RemoveItem(PROTOCOL::S_RemoveItem fromPkt)
+void UMyGameInstance::Handle_RemoveItem(PROTOCOL::S_REMOVE_ITEM fromPkt)
 {
     // 제거할 아이템 리스트
     for (int32 removeSlot : fromPkt.slots()) {
@@ -361,6 +331,10 @@ void UMyGameInstance::Handle_RemoveItem(PROTOCOL::S_RemoveItem fromPkt)
 
         // c++ 제거
         inventory.Remove(removeSlot);
+        auto itemPtr = inventory.Find(removeSlot);
+        if (itemPtr != nullptr) {
+            UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_RemoveItem() Remove After Inventory C++ No Nullptr"));
+        }
 
         // ui 제거
         UMyHUDWidget* hudUI = Cast<UMyHUDWidget>(_uiManager->_mainUI);
@@ -369,13 +343,13 @@ void UMyGameInstance::Handle_RemoveItem(PROTOCOL::S_RemoveItem fromPkt)
     }
 }
 
-void UMyGameInstance::Handle_AddItem(PROTOCOL::S_AddItem fromPkt)
+void UMyGameInstance::Handle_AddItem(PROTOCOL::S_ADD_ITEM fromPkt)
 {
     for (int i = 0; i < fromPkt.items_size(); i++) 
         AddItem(fromPkt.items(i));
 }
 
-void UMyGameInstance::Handle_UpdateItem(PROTOCOL::S_UpdateItem fromPkt)
+void UMyGameInstance::Handle_UpdateItem(PROTOCOL::S_UPDATE_ITEM fromPkt)
 {
     for (int i = 0; i < fromPkt.items_size(); i++) 
         UpdateItem(fromPkt.items(i));
@@ -414,10 +388,12 @@ void UMyGameInstance::Handle_CreatePlayer(PROTOCOL::ObjectInfo info)
 
     // 실패
     if (info.name().compare("ExistName") == 0) {
-        lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail : ExistName"));
+        // lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail : ExistName"));
+        UE_LOG(LogTemp, Error, TEXT("CreatePlayer Failed - ExistsName"));
     }
     else if (info.name().compare("Fail") == 0) {
-        lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail"));
+        // lobby->PopUpWidget->FailReason->SetText(FText::FromString("Fail"));
+        UE_LOG(LogTemp, Error, TEXT("CreatePlayer Failed - Fail"));
     }
     // 성공
     else {
@@ -452,7 +428,7 @@ void UMyGameInstance::Handle_AddExp(int32 exp)
         _playerController->SystemChat(str);
 }
 
-void UMyGameInstance::Handle_Spawn(PROTOCOL::S_Spawn fromPkt)
+void UMyGameInstance::Handle_Spawn(PROTOCOL::S_SPAWN fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->SpawnObject(fromPkt);
@@ -460,7 +436,7 @@ void UMyGameInstance::Handle_Spawn(PROTOCOL::S_Spawn fromPkt)
         UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_Spawn() Error - Invalid GameController"));
 }
 
-void UMyGameInstance::Handle_DeSpawn(PROTOCOL::S_DeSpawn fromPkt)
+void UMyGameInstance::Handle_DeSpawn(PROTOCOL::S_DESPAWN fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->DeSpawnObject(fromPkt);
@@ -468,25 +444,25 @@ void UMyGameInstance::Handle_DeSpawn(PROTOCOL::S_DeSpawn fromPkt)
         UE_LOG(LogTemp, Error, TEXT("UMyGameInstance::Handle_DeSpawn() Error - Invalid GameController"));
 }
 
-void UMyGameInstance::Handle_Skill(PROTOCOL::S_Skill fromPkt)
+void UMyGameInstance::Handle_Skill(PROTOCOL::S_SKILL fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->Skill(fromPkt);
 }
 
-void UMyGameInstance::Handle_Chat(PROTOCOL::S_Chat fromPkt)
+void UMyGameInstance::Handle_Chat(PROTOCOL::S_CHAT fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->PlayerChat(fromPkt);
 }
 
-void UMyGameInstance::Handle_ChangeHp(PROTOCOL::S_ChangeHp fromPkt)
+void UMyGameInstance::Handle_ChangeHp(PROTOCOL::S_CHANGE_HP fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->ChangeHP(fromPkt);
 }
 
-void UMyGameInstance::Handle_Die(PROTOCOL::S_Die fromPkt)
+void UMyGameInstance::Handle_Die(PROTOCOL::S_DIE fromPkt)
 {
     if (IsValid(_playerController))
         _playerController->Die(fromPkt);
@@ -499,22 +475,56 @@ void UMyGameInstance::Handle_AddQuest(PROTOCOL::QuestInfo questInfo)
     _questManager->AddQuest(questInfo);
 }
 
-void UMyGameInstance::Handle_RemoveQuest(PROTOCOL::S_RemoveQuest fromPkt)
+void UMyGameInstance::Handle_RemoveQuest(PROTOCOL::S_REMOVE_QUEST fromPkt)
 {
     if (fromPkt.result() == true)
         _questManager->RemoveQuest(fromPkt.questid());
 }
 
-void UMyGameInstance::Handle_CompleteQuest(PROTOCOL::S_CompleteQuest fromPkt)
+void UMyGameInstance::Handle_CompleteQuest(PROTOCOL::S_COMPLETE_QUEST fromPkt)
 {
-    // 보상은 따른데서 진행한다. 여기서는 퀘스트를 완료 처리만 하면된다.
     if (fromPkt.result() == true)
         _questManager->CompleteQuest(fromPkt.questid());
 }
 
-void UMyGameInstance::Handle_UpdateQuest(PROTOCOL::S_UpdateQuest fromPkt)
+void UMyGameInstance::Handle_UpdateQuest(PROTOCOL::S_UPDATE_QUEST fromPkt)
 {
     _questManager->UpdateQuest(fromPkt.questinfo());
 }
+
+/*
+    
+*/
+PROTOCOL::PFVector UMyGameInstance::FVectorToPFV(FVector fv)
+{
+    PROTOCOL::PFVector pfv;
+    pfv.set_x(fv.X);
+    pfv.set_y(fv.Y);
+    pfv.set_z(fv.Z);
+    
+    return pfv;
+}
+
+PROTOCOL::PFVector UMyGameInstance::FRotatorToPFV(FRotator fr)
+{
+    PROTOCOL::PFVector pfv;
+    pfv.set_x(fr.Roll);
+    pfv.set_y(fr.Pitch);
+    pfv.set_z(fr.Yaw);
+
+    return pfv;
+}
+
+FVector UMyGameInstance::PFVtoFVector(PROTOCOL::PFVector pfv)
+{
+    return FVector(pfv.x(), pfv.y(), pfv.z());
+}
+
+FRotator UMyGameInstance::PFVtoFRoator(PROTOCOL::PFVector pfv)
+{
+    // pitch, yaw, roll
+    return FRotator(pfv.y(), pfv.z(), pfv.x());
+}
+
 
 

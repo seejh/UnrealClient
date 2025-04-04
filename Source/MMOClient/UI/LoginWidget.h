@@ -20,8 +20,8 @@ public:
 public:
 	UFUNCTION(BlueprintCallable)
 		void OnClickedLogin();
-	void CloseServerList();
-	void OpenServerList();
+	// void CloseServerList();
+	// void OpenServerList();
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 		UEditableTextBox* IdEditableTextBox;

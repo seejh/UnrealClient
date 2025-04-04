@@ -4,6 +4,9 @@
 #include "FirebaseManager.h"
 #include"MyGameInstance.h"
 
+#include<firebase/app.h>
+#include<firebase/auth.h>
+
 using std::string;
 using namespace firebase;
 using namespace firebase::auth;

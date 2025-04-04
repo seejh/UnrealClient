@@ -24,7 +24,7 @@ public:
 
 	void Init(bool isFirst);
 
-	// 퀘스트UI와 인벤토리 UI 정리 - 일단 사용안함
+	// UI 초기화
 	void Clear();
 
 	// 

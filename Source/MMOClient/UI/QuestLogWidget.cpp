@@ -29,7 +29,6 @@ void UQuestLogWidget::Init()
 
 void UQuestLogWidget::Clear()
 {
-	// 진행중인 퀘스트 버튼UI 리스트, 완료된 퀘스트 버튼UI 리스트, 해당 퀘스트 컨텐트 UI 리스트 싹다 초기화
 	ProgressList->ClearChildren();
 	CompleteList->ClearChildren();
 	Switcher->ClearChildren();

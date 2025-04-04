@@ -143,7 +143,7 @@ void UInvenSlotWidget::RequestUseItem()
 		// SetUseTimer();
 
 		// 사용 패킷
-		PROTOCOL::C_UseItem toPkt;
+		PROTOCOL::C_USE_ITEM toPkt;
 		toPkt.set_slot(item->itemDB.slot);
 		toPkt.set_use(true);
 
@@ -156,7 +156,7 @@ void UInvenSlotWidget::RequestUseItem()
 	// 장비품이면 장착/해제
 	else {
 		// 장착 패킷
-		PROTOCOL::C_EquipItem toPkt;
+		PROTOCOL::C_EQUIP_ITEM toPkt;
 		toPkt.set_slot(item->itemDB.slot);
 		toPkt.set_equip(!item->itemDB.equipped);
 

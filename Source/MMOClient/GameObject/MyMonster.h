@@ -5,10 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 
-
-#include"Projectile.h"
 #include"MyCharacterBase.h"
-
 
 #include "MyMonster.generated.h"
 

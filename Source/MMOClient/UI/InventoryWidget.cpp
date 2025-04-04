@@ -47,9 +47,8 @@ void UInventoryWidget::Init(bool isFirst)
 
 void UInventoryWidget::Clear()
 {
-	for (int i = 0; i < MAX_INVEN_SIZE; i++) {
+	for (int i = 0; i < MAX_INVEN_SIZE; i++)
 		SetSlot(i);
-	}
 }
 
 UInvenSlotWidget* UInventoryWidget::GetSlotAt(int32 slot)

@@ -24,16 +24,16 @@ void URespawnWidget::Init()
 void URespawnWidget::OnRespawnBtnClicked()
 {
 	// 중복 요청 방지 - 비활성화
-	RespawnBtn->SetIsEnabled(false);
+	// RespawnBtn->SetIsEnabled(false);
 
-	// 요청
+	// 패킷 요청
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
 	
-	// 패킷 - 걍 일단 여기서 처리
-	PROTOCOL::C_Enter_Room toPkt;
+	// 플레이하던 캐릭터의 이름으로 재입장 요청
+	PROTOCOL::C_ENTER_ROOM toPkt;
 	toPkt.set_roomnum(1);
-	toPkt.mutable_object()->set_name(name);
-
+	toPkt.mutable_object()->set_name(instance->_myCharacterInfo->name());
+	toPkt.set_isrespawn(true);
 	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
 	instance->_netSession->Send(sendBuffer);
 }

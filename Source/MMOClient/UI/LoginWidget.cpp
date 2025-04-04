@@ -38,50 +38,64 @@ void ULoginWidget::OnClickedLogin()
 	FString id(IdEditableTextBox->GetText().ToString());
 	FString pw(PwEditableTextBox->GetText().ToString());
 
-	// 웹서버 사용
-	//FLoginAccountReq loginReq;
-	//loginReq.AccountName = id;
-	//loginReq.AccountPw = pw;
-	// 
-	//UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	//instance->_webManager->RequestPost(loginReq, [this, instance](FLoginAccountRes res) {
-	//	if (res.LoginOk) {
-	//		UE_LOG(LogTemp, Error, TEXT("LoginOk"));
-	//		
-	//		// 서버 리스트 위젯 세팅
-	//		serverListPopUp->SetServerList(res.serverList);
-	//		serverListPopUp->SetVisibility(ESlateVisibility::Visible);
-	//		
-	//		// 토큰 세팅
-	//		instance->_token = res.Token;
-	//	}
-	//	else {
-	//		UE_LOG(LogTemp, Error, TEXT("ULoginWidget::OnClickedLogin() Failed."));
-	//	}
-	//	});
-	
-	// 개발중(웹서버 X)
-	FLoginAccountRes res;
+
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
-	if (id.Compare("see") == 0 && pw.Compare("see") == 0) 
-		instance->_token = "1";
-	else if (id.Compare("lee") == 0 && pw.Compare("lee") == 0) 
-		instance->_token = "2";
-	else if (id.Compare("kim") == 0 && pw.Compare("kim") == 0) 
-		instance->_token = "3";
-	else {
-		UE_LOG(LogTemp, Error, TEXT("Invalid Account"));
+	if (IsValid(instance) == false) {
+		UE_LOG(LogTemp, Error, TEXT("ULoginWidget::OnClickedLogin() Error - Invalid GameInstance"));
 		return;
 	}
 
-	FServerInfo serverInfo;
-	serverInfo.BusyScore = 0;
-	serverInfo.IpAddress = "127.0.0.1";
-	serverInfo.Port = 7777;
-	serverInfo.Name = "FirstServer";
+	// 개발중 (웹서버 사용 X)
+	if (instance->_isRelease == false) {
+		FLoginAccountRes res;
+		if (id.Compare("see") == 0 && pw.Compare("see") == 0)
+			instance->_token = "1";
+		else if (id.Compare("lee") == 0 && pw.Compare("lee") == 0)
+			instance->_token = "2";
+		else if (id.Compare("kim") == 0 && pw.Compare("kim") == 0)
+			instance->_token = "3";
+		else {
+			UE_LOG(LogTemp, Error, TEXT("Invalid Account"));
+			return;
+		}
 
-	res.serverList.Add(serverInfo);
+		// 서버 정보 가상으로 설정해서 UI로 전달
+		FServerInfo serverInfo;
+		serverInfo.BusyScore = 0;
+		serverInfo.IpAddress = "127.0.0.1";
+		serverInfo.Port = 7777;
+		serverInfo.Name = "FirstServer";
+
+		res.serverList.Add(serverInfo);
+
+		// 서버선택 UI
+		serverListPopUp->SetServerList(res.serverList);
+		serverListPopUp->SetVisibility(ESlateVisibility::Visible);
+	}
 	
-	serverListPopUp->SetServerList(res.serverList);
-	serverListPopUp->SetVisibility(ESlateVisibility::Visible);
+	// 실사용 (웹서버 사용)
+	else {
+		// 웹서버 패킷 생성
+		FLoginAccountReq loginReq;
+		loginReq.AccountName = id;
+		loginReq.AccountPw = pw;
+
+		// 전송
+		instance->_webManager->RequestPost(loginReq, [this, instance](FLoginAccountRes res) {
+			// 서버로부터 패킷 응답 처리
+			if (res.LoginOk) {
+				UE_LOG(LogTemp, Error, TEXT("LoginOk"));
+			
+				// 서버선택 UI
+				serverListPopUp->SetServerList(res.serverList);
+				serverListPopUp->SetVisibility(ESlateVisibility::Visible);
+			
+				// 토큰 세팅
+				instance->_token = res.Token;
+			}
+			else {
+				UE_LOG(LogTemp, Error, TEXT("ULoginWidget::OnClickedLogin() Failed"));
+			}
+		});
+	}
 }

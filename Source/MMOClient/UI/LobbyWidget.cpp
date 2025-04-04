@@ -60,10 +60,10 @@ void ULobbyWidget::OnSlotClicked(int32 slotNum)
 	instance->_myCharacterInfo = &instance->_myCharacterList[slotNum];
 
 	// ÆÐÅ¶
-	PROTOCOL::C_Enter_Room toPkt;
+	PROTOCOL::C_ENTER_ROOM toPkt;
 	toPkt.set_roomnum(1);
 	toPkt.mutable_object()->set_name(instance->_myCharacterInfo->name());
-
+	toPkt.set_isrespawn(false);
 	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
 	instance->_netSession->Send(sendBuffer);
 }

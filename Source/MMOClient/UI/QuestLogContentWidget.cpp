@@ -23,7 +23,7 @@ void UQuestLogContentWidget::OnCancelBtnClicked()
 	UMyGameInstance* instance = Cast<UMyGameInstance>(GetGameInstance());
 	
 	// 패킷
-	PROTOCOL::C_RemoveQuest toPkt;
+	PROTOCOL::C_REMOVE_QUEST toPkt;
 	toPkt.set_questdbid(quest->_questInfo.templateId);
 	
 	auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);

@@ -16,7 +16,7 @@ bool Handle_INVALID(UMyGameInstance* instance, uint8* buffer, int len)
 	return true;
 }
 
-bool Handle_S_LOGIN(UMyGameInstance* instance, PROTOCOL::S_Login fromPkt)
+bool Handle_S_LOGIN(UMyGameInstance* instance, PROTOCOL::S_LOGIN fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_Login"));
 
@@ -26,7 +26,7 @@ bool Handle_S_LOGIN(UMyGameInstance* instance, PROTOCOL::S_Login fromPkt)
 }
 
 // 본인(로그인, 종료)
-bool Handle_S_ENTER_ROOM(UMyGameInstance* instance, PROTOCOL::S_Enter_Room fromPkt)
+bool Handle_S_ENTER_ROOM(UMyGameInstance* instance, PROTOCOL::S_ENTER_ROOM fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_EnterRoom"));
 
@@ -36,7 +36,7 @@ bool Handle_S_ENTER_ROOM(UMyGameInstance* instance, PROTOCOL::S_Enter_Room fromP
 	return true;
 }
 
-bool Handle_S_LEAVE_ROOM(UMyGameInstance* instance, PROTOCOL::S_Leave_Room fromPkt)
+bool Handle_S_LEAVE_ROOM(UMyGameInstance* instance, PROTOCOL::S_LEAVE_ROOM fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_LeaveRoom"));
 
@@ -45,7 +45,7 @@ bool Handle_S_LEAVE_ROOM(UMyGameInstance* instance, PROTOCOL::S_Leave_Room fromP
 	return true;
 }
 
-bool Handle_S_SPAWN(UMyGameInstance* instance, PROTOCOL::S_Spawn fromPkt)
+bool Handle_S_SPAWN(UMyGameInstance* instance, PROTOCOL::S_SPAWN fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_Spawn"));
 
@@ -54,7 +54,7 @@ bool Handle_S_SPAWN(UMyGameInstance* instance, PROTOCOL::S_Spawn fromPkt)
 	return true;
 }
 
-bool Handle_S_DESPAWN(UMyGameInstance* instance, PROTOCOL::S_DeSpawn fromPkt)
+bool Handle_S_DESPAWN(UMyGameInstance* instance, PROTOCOL::S_DESPAWN fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_DeSpawn"));
 	
@@ -63,7 +63,7 @@ bool Handle_S_DESPAWN(UMyGameInstance* instance, PROTOCOL::S_DeSpawn fromPkt)
 	return true;
 }
 
-bool Handle_S_ITEMLIST(UMyGameInstance* instance, PROTOCOL::S_ItemList fromPkt)
+bool Handle_S_ITEMLIST(UMyGameInstance* instance, PROTOCOL::S_ITEMLIST fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_ItemList - Count:%d"), fromPkt.items_size());
 
@@ -72,39 +72,35 @@ bool Handle_S_ITEMLIST(UMyGameInstance* instance, PROTOCOL::S_ItemList fromPkt)
 	return true;
 }
 
-bool Handle_S_MOVE(UMyGameInstance* instance, PROTOCOL::S_Move fromPkt)
+bool Handle_S_MOVE(UMyGameInstance* instance, PROTOCOL::S_MOVE fromPkt)
 {
 	instance->_playerController->MoveUpdate(fromPkt.object());
 	
 	return true;
 }
 
-bool Handle_S_SKILL(UMyGameInstance* instance, PROTOCOL::S_Skill fromPkt)
+bool Handle_S_SKILL(UMyGameInstance* instance, PROTOCOL::S_SKILL fromPkt)
 {
-	UE_LOG(LogTemp, Error, TEXT("Packet S_Skill"));
-
 	instance->Handle_Skill(fromPkt);
 
 	return true;
 }
 
-bool Handle_S_CHAT(UMyGameInstance* instance, PROTOCOL::S_Chat fromPkt)
+bool Handle_S_CHAT(UMyGameInstance* instance, PROTOCOL::S_CHAT fromPkt)
 {
 	instance->Handle_Chat(fromPkt);
 
 	return true;
 }
 
-bool Handle_S_CHANGEHP(UMyGameInstance* instance, PROTOCOL::S_ChangeHp fromPkt)
+bool Handle_S_CHANGEHP(UMyGameInstance* instance, PROTOCOL::S_CHANGE_HP fromPkt)
 {
-	UE_LOG(LogTemp, Error, TEXT("Packet S_ChangeHP"));
-
 	instance->Handle_ChangeHp(fromPkt);
 
 	return true;
 }
 
-bool Handle_S_DIE(UMyGameInstance* instance, PROTOCOL::S_Die fromPkt)
+bool Handle_S_DIE(UMyGameInstance* instance, PROTOCOL::S_DIE fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_Die"));
 
@@ -113,21 +109,21 @@ bool Handle_S_DIE(UMyGameInstance* instance, PROTOCOL::S_Die fromPkt)
 	return true;
 }
 
-bool Handle_S_EQUIPITEM(UMyGameInstance* instance, PROTOCOL::S_EquipItem fromPkt)
+bool Handle_S_EQUIPITEM(UMyGameInstance* instance, PROTOCOL::S_EQUIP_ITEM fromPkt)
 {
 	instance->Handle_EquipItem(fromPkt);
 
 	return true;
 }
 
-bool Handle_S_USEITEM(UMyGameInstance* instance, PROTOCOL::S_UseItem fromPkt)
+bool Handle_S_USEITEM(UMyGameInstance* instance, PROTOCOL::S_USE_ITEM fromPkt)
 {
 	instance->Handle_UseItem(fromPkt);
 
 	return true;
 }
 
-bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_AddItem fromPkt)
+bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_ADD_ITEM fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_AddItem"));
 
@@ -136,7 +132,7 @@ bool Handle_S_ADDITEM(UMyGameInstance* instance, PROTOCOL::S_AddItem fromPkt)
 	return true;
 }
 
-bool Handle_S_UPDATEITEM(UMyGameInstance* instance, PROTOCOL::S_UpdateItem fromPkt)
+bool Handle_S_UPDATEITEM(UMyGameInstance* instance, PROTOCOL::S_UPDATE_ITEM fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_UpdateItem"));
 
@@ -145,7 +141,7 @@ bool Handle_S_UPDATEITEM(UMyGameInstance* instance, PROTOCOL::S_UpdateItem fromP
 	return true;
 }
 
-bool Handle_S_REMOVEITEM(UMyGameInstance* instance, PROTOCOL::S_RemoveItem fromPkt)
+bool Handle_S_REMOVEITEM(UMyGameInstance* instance, PROTOCOL::S_REMOVE_ITEM fromPkt)
 {
 	instance->Handle_RemoveItem(fromPkt);
 
@@ -153,28 +149,28 @@ bool Handle_S_REMOVEITEM(UMyGameInstance* instance, PROTOCOL::S_RemoveItem fromP
 }
 
 // 장비 변경, 레벨업, 
-bool Handle_S_CHANGE_STAT(UMyGameInstance* instance, PROTOCOL::S_ChangeStat fromPkt)
+bool Handle_S_CHANGE_STAT(UMyGameInstance* instance, PROTOCOL::S_CHANGE_STAT fromPkt)
 {
 	instance->Handle_ChangeStat(fromPkt.object());
 
 	return true;
 }
 
-bool Handle_S_CREATE_PLAYER(UMyGameInstance* instance, PROTOCOL::S_CreatePlayer fromPkt)
+bool Handle_S_CREATE_PLAYER(UMyGameInstance* instance, PROTOCOL::S_CREATE_PLAYER fromPkt)
 {
 	instance->Handle_CreatePlayer(fromPkt.object());
 	
 	return false;
 }
 
-bool Handle_S_ADD_EXP(UMyGameInstance* instance, PROTOCOL::S_AddExp fromPkt)
+bool Handle_S_ADD_EXP(UMyGameInstance* instance, PROTOCOL::S_ADD_EXP fromPkt)
 {
 	instance->Handle_AddExp(fromPkt.exp());
 
 	return true;
 }
 
-bool Handle_S_LEVEL_UP(UMyGameInstance* instance, PROTOCOL::S_LevelUp fromPkt)
+bool Handle_S_LEVEL_UP(UMyGameInstance* instance, PROTOCOL::S_LEVEL_UP fromPkt)
 {
 	instance->Handle_ChangeStat(fromPkt.info());
 	
@@ -184,14 +180,14 @@ bool Handle_S_LEVEL_UP(UMyGameInstance* instance, PROTOCOL::S_LevelUp fromPkt)
 	return true;
 }
 
-bool Handle_S_ADD_QUEST(UMyGameInstance* instance, PROTOCOL::S_AddQuest fromPkt)
+bool Handle_S_ADD_QUEST(UMyGameInstance* instance, PROTOCOL::S_ADD_QUEST fromPkt)
 {
 	instance->Handle_AddQuest(fromPkt.quest());
 
 	return true;
 }
 
-bool Handle_S_QUESTLIST(UMyGameInstance* instance, PROTOCOL::S_QuestList fromPkt)
+bool Handle_S_QUESTLIST(UMyGameInstance* instance, PROTOCOL::S_QUESTLIST fromPkt)
 {
 	for (int i = 0; i < fromPkt.quests_size(); i++) 
 		instance->Handle_AddQuest(fromPkt.quests(i));
@@ -199,7 +195,7 @@ bool Handle_S_QUESTLIST(UMyGameInstance* instance, PROTOCOL::S_QuestList fromPkt
 	return true;
 }
 
-bool Handle_S_REMOVE_QUEST(UMyGameInstance* instance, PROTOCOL::S_RemoveQuest fromPkt)
+bool Handle_S_REMOVE_QUEST(UMyGameInstance* instance, PROTOCOL::S_REMOVE_QUEST fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_RemoveQuest"));
 
@@ -208,7 +204,7 @@ bool Handle_S_REMOVE_QUEST(UMyGameInstance* instance, PROTOCOL::S_RemoveQuest fr
 	return true;
 }
 
-bool Handle_S_COMPLETE_QUEST(UMyGameInstance* instance, PROTOCOL::S_CompleteQuest fromPkt)
+bool Handle_S_COMPLETE_QUEST(UMyGameInstance* instance, PROTOCOL::S_COMPLETE_QUEST fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_CompleteQuest"));
 
@@ -217,7 +213,7 @@ bool Handle_S_COMPLETE_QUEST(UMyGameInstance* instance, PROTOCOL::S_CompleteQues
 	return true;
 }
 
-bool Handle_S_UPDATE_QUEST(UMyGameInstance* instance, PROTOCOL::S_UpdateQuest fromPkt)
+bool Handle_S_UPDATE_QUEST(UMyGameInstance* instance, PROTOCOL::S_UPDATE_QUEST fromPkt)
 {
 	UE_LOG(LogTemp, Error, TEXT("Packet S_UpdateQuest"));
 
@@ -263,80 +259,80 @@ void FServerPacketHandler::Init()
 		};
 	}
 
-	_packetHandleFuncs[PROTOCOL::MsgId::S_LOGIN] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Login>(Handle_S_LOGIN, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_login] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_LOGIN>(Handle_S_LOGIN, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_ENTER_ROOM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Enter_Room>(Handle_S_ENTER_ROOM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_enter_room] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_ENTER_ROOM>(Handle_S_ENTER_ROOM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_LEAVE_ROOM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Leave_Room>(Handle_S_LEAVE_ROOM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_leave_room] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_LEAVE_ROOM>(Handle_S_LEAVE_ROOM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_SPAWN] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Spawn>(Handle_S_SPAWN, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_spawn] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_SPAWN>(Handle_S_SPAWN, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_DESPAWN] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_DeSpawn>(Handle_S_DESPAWN, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_despawn] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_DESPAWN>(Handle_S_DESPAWN, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_ITEM_LIST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_ItemList>(Handle_S_ITEMLIST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_itemlist] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_ITEMLIST>(Handle_S_ITEMLIST, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_MOVE] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Move>(Handle_S_MOVE, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_move] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_MOVE>(Handle_S_MOVE, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_SKILL] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Skill>(Handle_S_SKILL, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_skill] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_SKILL>(Handle_S_SKILL, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_CHAT] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Chat>(Handle_S_CHAT, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_chat] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_CHAT>(Handle_S_CHAT, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_CHANGE_HP] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_ChangeHp>(Handle_S_CHANGEHP, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_change_hp] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_CHANGE_HP>(Handle_S_CHANGEHP, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_DIE] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_Die>(Handle_S_DIE, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_die] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_DIE>(Handle_S_DIE, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_EQUIPITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_EquipItem>(Handle_S_EQUIPITEM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_equip_item] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_EQUIP_ITEM>(Handle_S_EQUIPITEM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_USEITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_UseItem>(Handle_S_USEITEM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_use_item] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_USE_ITEM>(Handle_S_USEITEM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_ADD_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_AddItem>(Handle_S_ADDITEM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_add_item] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_ADD_ITEM>(Handle_S_ADDITEM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_UPDATE_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_UpdateItem>(Handle_S_UPDATEITEM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_update_item] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_UPDATE_ITEM>(Handle_S_UPDATEITEM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_REMOVE_ITEM] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_RemoveItem>(Handle_S_REMOVEITEM, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_remove_item] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_REMOVE_ITEM>(Handle_S_REMOVEITEM, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_CHANGE_STAT] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_ChangeStat>(Handle_S_CHANGE_STAT, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_change_stat] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_CHANGE_STAT>(Handle_S_CHANGE_STAT, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_CREATE_PLAYER] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_CreatePlayer>(Handle_S_CREATE_PLAYER, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_create_player] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_CREATE_PLAYER>(Handle_S_CREATE_PLAYER, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_ADD_EXP] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_AddExp>(Handle_S_ADD_EXP, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_add_exp] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_ADD_EXP>(Handle_S_ADD_EXP, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_LEVEL_UP] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_LevelUp>(Handle_S_LEVEL_UP, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_level_up] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_LEVEL_UP>(Handle_S_LEVEL_UP, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_ADD_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_AddQuest>(Handle_S_ADD_QUEST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_add_quest] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_ADD_QUEST>(Handle_S_ADD_QUEST, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_QUEST_LIST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_QuestList>(Handle_S_QUESTLIST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_questlist] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_QUESTLIST>(Handle_S_QUESTLIST, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_REMOVE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_RemoveQuest>(Handle_S_REMOVE_QUEST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_remove_quest] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_REMOVE_QUEST>(Handle_S_REMOVE_QUEST, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_COMPLETE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_CompleteQuest>(Handle_S_COMPLETE_QUEST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_complete_quest] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_COMPLETE_QUEST>(Handle_S_COMPLETE_QUEST, instance, buffer, len);
 	};
-	_packetHandleFuncs[PROTOCOL::MsgId::S_UPDATE_QUEST] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
-		return HandlePacket<PROTOCOL::S_UpdateQuest>(Handle_S_UPDATE_QUEST, instance, buffer, len);
+	_packetHandleFuncs[PROTOCOL::MsgId::s_update_quest] = [this](UMyGameInstance* instance, uint8* buffer, int len) {
+		return HandlePacket<PROTOCOL::S_UPDATE_QUEST>(Handle_S_UPDATE_QUEST, instance, buffer, len);
 	};
 }
 
@@ -353,72 +349,59 @@ bool FServerPacketHandler::HandlePacket(UMyGameInstance* instance, uint8* buffer
 /*---------------------------------------------------------------------------------------------
 	 MakeSendBuffer - public
 ---------------------------------------------------------------------------------------------*/
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Login toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_LOGIN toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_LOGIN);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_login);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Enter_Room toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_ENTER_ROOM toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_ENTER_ROOM);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_enter_room);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Leave_Room toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_LEAVE_ROOM toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_LEAVE_ROOM);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_leave_room);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Spawn toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_SPAWN toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_SPAWN);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_spawn);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Move toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_MOVE toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_MOVE);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_move);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Skill toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_SKILL toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_SKILL);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_skill);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_Chat toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CHAT toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_CHAT);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_chat);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_EquipItem toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_EQUIP_ITEM toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_EQUIPITEM);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_equip_item);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UseItem toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_USE_ITEM toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_USEITEM);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_use_item);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CreatePlayer toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CREATE_PLAYER toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_CREATE_PLAYER);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_create_player);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_AddQuest toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_ADD_QUEST toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_ADD_QUEST);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_add_quest);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_RemoveQuest toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_REMOVE_QUEST toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_REMOVE_QUEST);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_remove_quest);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_CompleteQuest toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_COMPLETE_QUEST toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_COMPLETE_QUEST);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_complete_quest);
 }
-
-TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UpdateQuest toPkt)
+TSharedPtr<FSendBuffer> FServerPacketHandler::MakeSendBuffer(PROTOCOL::C_UPDATE_QUEST toPkt)
 {
-	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::C_UPDATE_QUEST);
+	return MakeSendBuffer(toPkt, PROTOCOL::MsgId::c_update_quest);
 }

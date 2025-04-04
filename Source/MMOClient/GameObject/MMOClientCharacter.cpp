@@ -175,10 +175,20 @@ void AMMOClientCharacter::Attack()
 			AMyCharacterBase* victimActor = Cast<AMyCharacterBase>(victim);
 			if (IsValid(victimActor)) {
 
-				// 몬스터가 아니면 패스
-				if (instance->_objectsManager->GetObjectInfoById(victimActor->_objectId)->objecttype() != PROTOCOL::GameObjectType::MONSTER)
+				// 본인이면 패스
+				if (victimActor->_objectId == instance->_myCharacterInfo->objectid())
 					continue;
 
+				// 몬스터가 아니면 패스
+				PROTOCOL::ObjectInfo* victimInfo = instance->_objectsManager->GetObjectInfoById(victimActor->_objectId);
+				if (victimInfo == nullptr) {
+					UE_LOG(LogTemp, Error, TEXT("AMMOClientCharacter::Attack() Error - Invalid ObjectInfo-%d"), victimActor->_objectId);
+					return;
+				}
+
+				if (victimInfo->objecttype() != PROTOCOL::GameObjectType::MONSTER)
+					continue;
+				
 				victims.Add(victimActor->_objectId);
 			}
 		}
@@ -200,7 +210,7 @@ void AMMOClientCharacter::MoveForwardAndRight(float Value, bool isForward)
 		else {
 			Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		}
-		
+
 		AddMovementInput(Direction, Value);
 	}
 
@@ -250,6 +260,11 @@ void AMMOClientCharacter::MoveForward(float Value)
 
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+
+		FVector v = GetActorForwardVector();
+		//UE_LOG(LogTemp, Error, TEXT("[%f,%f,%f] - [%f,%f,%f]"), v.X, v.Y, v.Z, Direction.X, Direction.Y, Direction.Z);
+
 		AddMovementInput(Direction, Value);
 	}
 }

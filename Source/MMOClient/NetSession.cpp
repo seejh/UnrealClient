@@ -119,20 +119,16 @@ void FNetSession::Recv()
 
         while (true) {
             // 패킷 헤더 추출도 못하나?
-            if (_recvBuffer->DataSize() < sizeof(PacketHeader)) {
+            if (_recvBuffer->DataSize() < sizeof(PacketHeader)) 
                 break;
-            }
 
             // 덜 받아서 패킷을 완성할 수가 없나?
             PacketHeader* header = reinterpret_cast<PacketHeader*>(_recvBuffer->BufferReadPos());
-            if (_recvBuffer->DataSize() < header->_size + sizeof(PacketHeader)) {
+            if (_recvBuffer->DataSize() < header->_size) 
                 break;
-            }
 
-            int packetBodySize = header->_size;
-            int totalPacketSize = packetBodySize + sizeof(PacketHeader);
-            _instance->_packetHandler->HandlePacket(_instance, _recvBuffer->BufferReadPos(), packetBodySize);
-            _recvBuffer->OnRead(totalPacketSize);
+            _instance->_packetHandler->HandlePacket(_instance, _recvBuffer->BufferReadPos(), header->_size);
+            _recvBuffer->OnRead(header->_size);
         }
         
         _recvBuffer->Reset();

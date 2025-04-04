@@ -56,7 +56,7 @@ void UMyHUDWidget::Init(bool isFirst)
 
 void UMyHUDWidget::Clear()
 {
-	// 퀘스트 UI, 인벤토리 UI 정리
+	// 퀘스트, 인벤토리, 스텟, 채팅창
 
 	// 퀘스트UI 정리
 	QuestUI->Clear();
@@ -70,10 +70,9 @@ void UMyHUDWidget::Clear()
 
 void UMyHUDWidget::Reset()
 {
-	// 리스폰 위젯
+	// 리스폰 위젯 비가시화, hp 업데이트
 	RespawnUI->Init();
 
-	// hp 업데이트
 	UpdateHp();
 }
 

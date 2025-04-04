@@ -37,6 +37,12 @@ AMyMonster::AMyMonster()
 
 void AMyMonster::MoveToLocation(FVector location)
 {
+	/*
+	에디터에서 캐릭터무브먼트 컴포넌트에서 가속, 감속을 사용해야 제대로 
+	애니메이션이 들어간다.
+
+	*/
+
 	// 
 	//location.Z = 145.f;
 
@@ -45,6 +51,9 @@ void AMyMonster::MoveToLocation(FVector location)
 		EPathFollowingRequestResult::Type result = controller->MoveToLocation(location);
 		if (result == EPathFollowingRequestResult::Failed) 
 			UE_LOG(LogTemp, Error, TEXT("MoveToLocation Failed"));
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("AMyMonster::MoveToLocation() Error - Invalid Controller"));
 	}
 }
 
@@ -65,6 +74,8 @@ void AMyMonster::OnDead()
 
 void AMyMonster::UpdateHP()
 {
+	UE_LOG(LogTemp, Error, TEXT("Monster::UpdateHP"));
+
 	Super::UpdateHP();
 
 	UMonsterHPWidget* hpWidget = Cast<UMonsterHPWidget>(HPBar->GetWidget());

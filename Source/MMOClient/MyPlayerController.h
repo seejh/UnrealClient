@@ -11,18 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "MyPlayerController.generated.h"
 
-/*-------------------------------------------------------------------------------
-	PlayerInfo
--------------------------------------------------------------------------------*/
-class ActorInfo {
-public:
 
-	//FVector GetVelocity();
-	//void SetPos(PROTOCOL::Position pos);
-public:
-	PROTOCOL::ObjectInfo info;
-	AActor* _ownerActor = nullptr;
-};
 
 /*---------------------------------------------------------------------------------------------
 	MyPlayerController
@@ -39,23 +28,22 @@ public:
 	void Init(bool isFirst);
 
 	/*---------------------------------------------------------------------------
-		기타
+		상속
 	---------------------------------------------------------------------------*/
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	void ShowMouseCursor(bool isShow);
-
+	
 	/*---------------------------------------------------------------------------
 		외부 입력
 	--------------------------------------------------------------------------*/
-	void SpawnObject(PROTOCOL::S_Spawn& spawnPkt);
-	void DeSpawnObject(PROTOCOL::S_DeSpawn& despawnPkt);
+	void SpawnObject(PROTOCOL::S_SPAWN& spawnPkt);
+	void DeSpawnObject(PROTOCOL::S_DESPAWN& despawnPkt);
 	void MoveUpdate(PROTOCOL::ObjectInfo info);
-	void ChangeHP(PROTOCOL::S_ChangeHp fromPkt);
-	void Skill(PROTOCOL::S_Skill& skillPkt);
-	void Die(PROTOCOL::S_Die fromPkt);
-	void PlayerChat(PROTOCOL::S_Chat fromPkt);
+	void ChangeHP(PROTOCOL::S_CHANGE_HP fromPkt);
+	void Skill(PROTOCOL::S_SKILL& skillPkt);
+	void Die(PROTOCOL::S_DIE fromPkt);
+	void PlayerChat(PROTOCOL::S_CHAT fromPkt);
 	void SystemChat(FString chatMessage);
 
 	/*---------------------------------------------------------------------------
@@ -68,8 +56,9 @@ public:
 protected:
 	virtual void SetupInputComponent() override;
 public:
+	// 입력
 	void Interact();
-	void MouseCursorOnOff();
+	void MouseCursor();
 	void OpenInventory();
 	void OpenQuest();
 
@@ -79,4 +68,5 @@ public:
 	UMyGameInstance* _ownerInstance;
 	
 	int64 _lastSendTime = 0;
+	float t = 0;
 };

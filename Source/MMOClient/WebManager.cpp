@@ -66,6 +66,8 @@ void FWebManager::RequestPost(FLoginAccountReq reqModel, TFunction<void(FLoginAc
 
 	// ¿äÃ»
 	request->ProcessRequest();
+
+	UE_LOG(LogTemp, Error, TEXT("FWebManager::RequestPost"));
 }
 
 /*-----------------------------------------------------------------------------

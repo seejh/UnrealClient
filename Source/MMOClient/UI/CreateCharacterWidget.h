@@ -25,9 +25,6 @@ public:
 	class UEditableTextBox* Name;
 
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* FailReason;
-
-	UPROPERTY(meta = (BindWidget))
 	class UButton* CreateBtn;
 
 	UPROPERTY(meta = (BindWidget))

@@ -55,7 +55,7 @@ void UDialogueWidget::Open(int32 npcId)
 		UE_LOG(LogTemp, Error, TEXT("Request to Server Complete Quest"));
 
 		// 완료 요청
-		PROTOCOL::C_CompleteQuest toPkt;
+		PROTOCOL::C_COMPLETE_QUEST toPkt;
 		toPkt.set_questdbid(quest->_questInfo.templateId);
 
 		auto sendBuffer = instance->_packetHandler->MakeSendBuffer(toPkt);
